@@ -1,0 +1,36 @@
+# Datos de entrada (incluye archivos originales/confidenciales)
+/datos/originales/**
+# Se conserva solo una plantilla sin registros reales
+!/datos/originales/cohortes_diplomado_PLANTILLA.csv
+!/datos/originales/.gitkeep
+
+# Bases transformadas y exportaciones restringidas
+/datos/procesados/
+
+# Todas las salidas generadas: auditorias, tablas, figuras, logs
+/salidas/
+/reportes/
+/outputs/
+/resultados/
+
+# Archivos temporales y sesiones de R/RStudio
+.Rhistory
+.RData
+.Ruserdata
+.Rproj.user/
+.Renviron
+.Rprofile.local
+*.Rcheck/
+*.Rout
+*.Rout.fail
+*.Rproj.user
+
+# Temporales de editores/SO
+.DS_Store
+Thumbs.db
+~$*
+*.swp
+*.swo
+*.tmp
+
+# No excluir: scripts R, README*, config/config.yml y plantillas

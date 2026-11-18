@@ -1,0 +1,21 @@
+archivos:
+  carga: "datos/originales/Carga Docente 2021-2026 1.xlsx"
+  rendimiento: "datos/originales/Base Rendimiento 2021-2026 1.xlsx"
+  perfeccionamiento: "datos/originales/Perfeccionamiento pedagógico docente consolidado 2026 2.xlsx"
+  cohortes: "datos/originales/cohortes_diplomado.csv"
+analisis:
+  nombre_programa: "DIPLOMADO EN DOCENCIA PARA LA EDUCACION SUPERIOR"
+  anio_inicio: 2021
+  anio_fin: 2026
+  solo_calificables: true
+  solo_activos: true
+  excluir_nrc_no_numerico: true
+  excluir_posgrados: true
+  criterio_docencia: "unico_docente"  # unico_docente; todos_descriptivo
+  minimo_estudiantes_seccion: 5
+  preferir_hoja_mas_reciente: true
+  generar_exportaciones_detalle: true
+analisis_anual:
+  activar: true
+  ejecutar_regresiones: true
+  excluir_anio_certificacion: true
