@@ -11,9 +11,9 @@ R >= 4.2. Instalar: `install.packages(c("readxl","readr","dplyr","tidyr","purrr"
 ## Instrucciones
 1. Copiar los tres Excel originales en `datos/originales/`. **Nunca redistribuir** el libro de perfeccionamiento original: contiene hojas ocultas con datos personales identificables.
 2. Editar nombres de archivo en `config/config.yml` si son distintos (el nombre de perfeccionamiento debe coincidir exactamente con el archivo local).
-3. Ejecutar desde raíz `Rscript main.R` (o `source("main.R")` desde RStudio con la carpeta raíz como working directory).
+3. Ejecutar desde raíz `Rscript main.R` (o `source("main.R")` desde RStudio con la carpeta raíz como working directory). -> source("main.R", encoding = "UTF-8")
 4. Revisar todos los CSV de `salidas/`, especialmente conflicto de matrículas, NRC repetidos, docentes por sección y fechas faltantes.
-5. Cuando llegue la base de postulantes, crear `datos/originales/cohortes_diplomado.csv` mediante la plantilla. No rellenar fechas desconocidas con año de certificación. Añadir calendario institucional y elegibilidad de controles, y adaptar módulo 03 antes de estimación causal.
+
 
 ## Reglas de limpieza
 - Cada matricula tiene llave `PERIODO + NRC + estudiante_id`; para solapamientos entre hojas se conserva versión de hoja más reciente y se auditan contradicciones. La universidad debe validar esa preferencia.
@@ -34,6 +34,6 @@ R >= 4.2. Instalar: `install.packages(c("readxl","readr","dplyr","tidyr","purrr"
 ## Próximos módulos (NO implementados todavía)
 - Integración de encuestas docentes y equivalencias curriculares 2026.
 - Tabla validada de cohortes, elegibilidad y controles nunca tratados/todavía no tratados.
-- Modelos MCO/FE como asociaciones y DiD escalonado/event study bajo supuestos evaluados.
+- Modelos MCO/FE como asociaciones y DiD escalonado/event study bajo supuestos evaluados (evaluado de forma anual, ignorando cohortes reales: resultados no causales)
 - Comparación de modelos con muestra fija y sensibilidad por otra capacitación.
 - Integración de evidencia cualitativa y reporte Quarto según metodología UIDIF.
