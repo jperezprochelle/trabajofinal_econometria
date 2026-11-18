@@ -1,4 +1,4 @@
-# Evaluación de formación docente — prototipo reproducible en R
+# Evaluación de formación docente
 
 **Uso interno y datos confidenciales.** En el informe público referirse a «una institución de educación superior de la Región de Valparaíso» y a «un diplomado en docencia universitaria».
 
@@ -6,7 +6,7 @@
 Se implementa importación de las hojas anonimizadas, auditoría de llaves y períodos, consolidación de matrículas, agregación por sección, identificación de actividades TEO/LAB/TAL, tratamiento de notas pendientes, variables descriptivas del diplomado y exportación de diagnósticos. **Todavía NO se estima un impacto causal** porque faltan fechas validadas de inicio y base de postulantes/control. No debe aproximarse la fecha de inicio por el año de certificación.
 
 ## Requisitos
-R >= 4.2. Instalar: `install.packages(c("readxl","readr","dplyr","tidyr","purrr","tibble","janitor","yaml","ggplot2","scales"))`.
+R >= 4.2. Instalar: `install.packages(c("readxl","readr","dplyr","tidyr","purrr","tibble","janitor","yaml","ggplot2","scales","fixest"))`.
 
 ## Instrucciones
 1. Copiar los tres Excel originales en `datos/originales/`. **Nunca redistribuir** el libro de perfeccionamiento original: contiene hojas ocultas con datos personales identificables.
