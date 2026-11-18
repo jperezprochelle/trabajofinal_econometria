@@ -1,5 +1,4 @@
 # 05: Piloto por año de CERTIFICACION. NO estima el efecto causal del inicio del diplomado.
-# Usa panel_modelo, creado por 02_construir_panel.R. Ejecutar main.R desde la raíz.
 message("05/05: Analisis anual exploratorio (cohortes de certificacion)")
 opts <- cfg$analisis_anual
 if (is.null(opts) || !isTRUE(opts$activar)) {
