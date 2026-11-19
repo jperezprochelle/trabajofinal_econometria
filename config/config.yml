@@ -3,6 +3,8 @@ archivos:
   rendimiento: "datos/originales/Base Rendimiento 2021-2026 1.xlsx"
   perfeccionamiento: "datos/originales/Perfeccionamiento pedagógico docente consolidado 2026 2.xlsx"
   cohortes: "datos/originales/cohortes_diplomado.csv"
+  # Docentes de la versión 6 (empieza nov. 2026). Columnas: rut_sin_dv, dv, anio_certificacion_esperado
+  cohorte_futura: "datos/originales/cohorte_futura.csv"
 analisis:
   nombre_programa: "DIPLOMADO EN DOCENCIA PARA LA EDUCACION SUPERIOR"
   anio_inicio: 2021
@@ -19,3 +21,8 @@ analisis_anual:
   activar: true
   ejecutar_regresiones: true
   excluir_anio_certificacion: true
+did:
+  activar: true
+  estimar: true        # false: solo exporta los conteos
+  bootstrap_iter: 999
+  semilla: 20261119

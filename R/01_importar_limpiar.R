@@ -6,9 +6,11 @@ columnas(p, c("rut_sin_dig", "dv", "nombre_curso", "trayectoria", "ano", "mes", 
 p <- p |> dplyr::mutate(docente_id=id_docente(rut_sin_dig,dv), curso_nombre_original=as.character(nombre_curso),
  curso_nombre=normalizar(nombre_curso), trayectoria=normalizar(trayectoria), anio_certificado=suppressWarnings(as.integer(ano)),
  mes_certificado=mes_num(mes), horas_registro=suppressWarnings(as.numeric(horas)),
- es_diplomado=curso_nombre == cfg$analisis$nombre_programa | trayectoria=="PROFESIONALIZANTE")
-# Si trayectoria PROFESIONALIZANTE contuviera otros programas: auditar; nunca usarla como prueba única.
-p <- p |> dplyr::mutate(es_diplomado = !is.na(curso_nombre) & curso_nombre == cfg$analisis$nombre_programa)
+ es_diplomado = !is.na(trayectoria) & trayectoria == "PROFESIONALIZANTE")
+# Criterio acordado (documento de referencia): el diplomado es TRAYECTORIA = PROFESIONALIZANTE (47 aprobados).
+# Control: si la trayectoria incluyera otro programa, detener en vez de mezclarlo en silencio.
+if (any(p$es_diplomado & p$curso_nombre != cfg$analisis$nombre_programa, na.rm = TRUE))
+  stop("TRAYECTORIA = PROFESIONALIZANTE contiene un programa distinto del diplomado: revisar auditoria_catalogo_formaciones.csv")
 reporte(p |> dplyr::count(curso_nombre, trayectoria, es_diplomado, name="registros", sort=TRUE), "auditoria_catalogo_formaciones.csv")
 
 # Equivalencias se conservan para auditoría; sin mapeo automático ambiguo.
@@ -25,6 +27,17 @@ c <- c |> dplyr::mutate(docente_id=id_docente(rut_sin_dv,dv), periodo=texto_llav
  tipo_actividad=normalizar(tp_horario), activo=normalizar(estatus)=="A", calificable=normalizar(calificable)=="Y",
  anio=suppressWarnings(as.integer(substr(periodo,1,4))), cod_periodo=substr(periodo,5,6),
  porc_respon=suppressWarnings(as.numeric(porc_respon)))
+# Períodos 30, 35 y 90: anuales sin datos de rendimiento; se excluyen (Ricardo, correo 19 nov). El 01 se mantiene.
+reporte(c |> dplyr::count(cod_periodo, name="filas"), "auditoria_carga_periodos.csv")
+c <- dplyr::filter(c, !cod_periodo %in% c("30", "35", "90"))
+# Perfeccionamiento: en 5 docentes del diplomado el guion del RUT estaba desplazado un carácter
+# (ZXAVWDV-E debía ser ZXAVWDVE-DV; Ricardo, correo 19 nov). Si el RUT sin DV no existe en la carga
+# pero RUT_SIN_DIG + DV sí existe, se usa este último. Funciona con el archivo original y con el corregido.
+ids_carga <- unique(c$docente_id)
+alt <- normalizar(paste0(texto_llave(p$rut_sin_dig), texto_llave(p$dv)))
+corregir <- !is.na(p$docente_id) & !(p$docente_id %in% ids_carga) & alt %in% ids_carga
+reporte(tibble::tibble(registros_corregidos = sum(corregir), diplomado_corregidos = sum(corregir & p$es_diplomado)), "auditoria_correccion_rut.csv")
+p$docente_id[corregir] <- alt[corregir]
 if (isTRUE(cfg$analisis$solo_activos)) c <- dplyr::filter(c, activo %in% TRUE)
 if (isTRUE(cfg$analisis$solo_calificables)) c <- dplyr::filter(c, calificable %in% TRUE)
 c <- c |> dplyr::filter(!is.na(periodo_nrc), !is.na(docente_id), !is.na(asignatura_id))
@@ -53,6 +66,9 @@ r <- r |> dplyr::mutate(periodo=texto_llave(periodo), nrc=texto_llave(nrc),
  programa_pregrado=!(jornada=="3" | regimen %in% c("P","E")),
  nota_valida=!is.na(nota) & nota>=1 & nota<=7)
 reporte(r |> dplyr::count(hoja_fuente, anio, cod_periodo, name="registros"), "auditoria_periodos_por_hoja.csv")
+# Ricardo (correo 19 nov): en la hoja 2026 hay que desmarcar los períodos de 2025 para evitar duplicidad.
+# Se usa la copia de la hoja 2025. La deduplicación de más abajo queda como control (no debería encontrar repetidos).
+r <- dplyr::filter(r, !(hoja_fuente == 2026 & anio == 2025))
 reporte(r |> dplyr::summarise(total=dplyr::n(), nrc_invalido=sum(!nrc_valido), pendientes=sum(!estado_valido), nota_invalida=sum(!nota_valida), posgrado=sum(!programa_pregrado,na.rm=TRUE)), "auditoria_exclusiones_rendimiento.csv")
 # Política de solapamiento: preferir registro de hoja más reciente para la misma matrícula.
 # Una matrícula se identifica por período + NRC + estudiante. Mantener las discrepancias auditadas.

@@ -1,7 +1,8 @@
 # Funciones compartidas. Todas las exportaciones usan IDs pseudonimizados.
 normalizar <- function(x) {
   x <- toupper(trimws(as.character(x)))
-  x <- iconv(x, from = "", to = "ASCII//TRANSLIT", sub = "")
+  # stringi en vez de iconv: en macOS iconv deja "EDUCACI'ON" y rompe las comparaciones.
+  x <- stringi::stri_trans_general(x, "Latin-ASCII")
   x <- gsub("[[:space:]]+", " ", x)
   x[x %in% c("", "NA", "N/A", "NULL")] <- NA_character_
   x
@@ -12,9 +13,11 @@ texto_llave <- function(x) {
   x[x %in% c("", "NA", "NULL")] <- NA_character_
   x
 }
-id_docente <- function(cuerpo, dv) {
-  a <- normalizar(texto_llave(cuerpo)); b <- normalizar(texto_llave(dv))
-  ifelse(is.na(a) | is.na(b), NA_character_, paste0(a, b))
+# Llave del docente = RUT anonimizado SIN dígito verificador (sugerencia de Ricardo, correo 19 nov).
+# Verificado: en la carga ningún RUT sin DV tiene más de un DV. El argumento dv se conserva por compatibilidad.
+id_docente <- function(cuerpo, dv = NULL) {
+  a <- normalizar(texto_llave(cuerpo))
+  ifelse(is.na(a), NA_character_, a)
 }
 id_curso <- function(materia, curso) {
   a <- normalizar(texto_llave(materia)); b <- normalizar(texto_llave(curso))
