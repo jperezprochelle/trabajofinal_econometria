@@ -42,3 +42,19 @@ assert_unica <- function(df, keys, origen) {
   n <- nrow(df); n2 <- nrow(dplyr::distinct(df, dplyr::across(dplyr::all_of(keys))))
   if(n != n2) stop(paste("Clave no única en", origen, ":", n-n2, "filas extra"))
 }
+# Texto UTF-8 leído como Windows-1252 y vuelto a guardar ("DISEÃ‘O" en vez de "DISEÑO"). Base Información del Docente.
+arreglar_codificacion <- function(x) {
+  x <- as.character(x)
+  m <- !is.na(x) & grepl("\u00c3", x)
+  if (any(m)) {
+    y <- iconv(x[m], from = "UTF-8", to = "CP1252"); Encoding(y) <- "UTF-8"
+    ok <- !is.na(y) & validUTF8(y)
+    x[which(m)[ok]] <- y[ok]
+  }
+  x
+}
+# Fechas guardadas como número de serie de Excel.
+fecha_excel <- function(x) {
+  if (inherits(x, c("Date", "POSIXt"))) return(as.Date(x))
+  as.Date(suppressWarnings(as.numeric(x)), origin = "1899-12-30")
+}

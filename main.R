@@ -15,3 +15,4 @@ source("R/03_modelos.R",encoding="UTF-8")
 source("R/04_informe.R",encoding="UTF-8")
 source("R/05_analisis_anual_exploratorio.R",encoding = "UTF-8")
 source("R/06_did_anual.R",encoding="UTF-8")
+source("R/07_emparejamiento.R",encoding="UTF-8")  # requiere MatchIt, cobalt y fixest

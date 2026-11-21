@@ -55,7 +55,12 @@ r <- purrr::map_dfr(as.character(2021:2026), function(hoja) {
   x$hoja_fuente <- as.integer(hoja)
   x
 })
+# NOTA (columna original) se usa solo para identificar notas conceptuales (APR, REPINA, NSP, AP+, AP-, REP, DIS).
+# NOTA_CONV las transforma en un número fijo (APR=5, REPINA=1, NSP=1, ...). En 2021-2022 NOTA viene vacía en esas filas.
+if (!"nota" %in% names(r)) stop("La base de rendimiento no tiene la columna NOTA: se necesita para identificar notas conceptuales")
 r <- r |> dplyr::mutate(periodo=texto_llave(periodo), nrc=texto_llave(nrc),
+ nota_original=normalizar(nota),
+ nota_conceptual=is.na(suppressWarnings(as.numeric(gsub(",", ".", nota_original, fixed=TRUE)))),
  periodo_nrc=periodo_nrc(periodo,nrc), estudiante_id=texto_llave(rut),
  asignatura_id=id_curso(materia,curso), anio=as.integer(substr(periodo,1,4)), cod_periodo=substr(periodo,5,6),
  nota=if(is.numeric(nota_conv)) as.numeric(nota_conv) else suppressWarnings(as.numeric(gsub(",", ".", trimws(as.character(nota_conv)), fixed=TRUE))),
@@ -84,6 +89,47 @@ reporte(conflictos,"auditoria_conflictos_duplicados.csv")
 r <- r |> dplyr::arrange(periodo_nrc, estudiante_id, dplyr::desc(hoja_fuente)) |>
  dplyr::distinct(periodo_nrc,estudiante_id,.keep_all=TRUE)
 assert_unica(r,c("periodo_nrc","estudiante_id"),"matriculas")
+# Notas conceptuales en la muestra final: se mantienen en la tasa de aprobación; el promedio alternativo (06) las excluye.
+reporte(r |> dplyr::filter(nota_conceptual) |>
+ dplyr::mutate(concepto=dplyr::coalesce(nota_original, "VACIA")) |>
+ dplyr::count(anio, concepto, nota_conv=nota, name="filas"), "auditoria_notas_conceptuales.csv")
+reporte(r |> dplyr::group_by(anio, periodo_nrc) |>
+ dplyr::summarise(conceptuales=sum(nota_conceptual), total=dplyr::n(), .groups="drop") |>
+ dplyr::group_by(anio) |>
+ dplyr::summarise(matriculas=sum(total), matriculas_conceptuales=sum(conceptuales),
+  secciones=dplyr::n(), secciones_con_alguna=sum(conceptuales>0), secciones_solo_conceptuales=sum(conceptuales==total), .groups="drop"),
+ "auditoria_notas_conceptuales_resumen.csv")
 # No asignar facultad de la materia: FACULTAD se refiere al programa del estudiante, no necesariamente a la asignatura.
 # Guardar solo agregaciones cuando los IDs sean sensibles, según config.
 if (isTRUE(cfg$analisis$generar_exportaciones_detalle)) guardar(r,"matriculas_limpias_restringido.csv")
+
+# Información del Docente (Ricardo, nov. 2026). Foto ACTUAL: solo docentes vigentes (VIGENCIA = 1).
+# Jerarquía, horas y cargo están medidos hoy (pueden ser posteriores al diplomado): no usarlos para emparejar.
+# Los códigos numéricos (NACIONALIDAD, NIVEL_FORMACION_ACADEMICO, CARGO_NORMALIZADO, PAIS) no tienen diccionario todavía.
+info_doc <- NULL
+if (!is.null(cfg$archivos$info_docente) && file.exists(cfg$archivos$info_docente)) {
+  info_doc <- readxl::read_excel(cfg$archivos$info_docente, sheet=1, .name_repair="unique") |> janitor::clean_names()
+  columnas(info_doc, c("rut_sin_dv","dv","sexo","fecha_nacimiento","nivel_formacion_academico","nivel_superior_adscripcion"), "Información del Docente")
+  info_doc <- info_doc |>
+    dplyr::mutate(dplyr::across(dplyr::where(is.character), arreglar_codificacion),
+                  docente_id=id_docente(rut_sin_dv), sexo=normalizar(sexo),
+                  fecha_nacimiento=fecha_excel(fecha_nacimiento), anio_nacimiento=as.integer(format(fecha_nacimiento, "%Y")),
+                  dplyr::across(dplyr::any_of("fecha_obt_tit_o_grado"), fecha_excel),
+                  # Mismas unidades escritas de dos formas en la base.
+                  facultad=dplyr::recode(normalizar(nivel_superior_adscripcion),
+                    "FACULTAD DE ARQUITECTURA COMUNICACION Y DISENO"="FACULTAD DE ARQUITECTURA COMUNICACIONES Y DISENO",
+                    "VICERECTORIA ACADEMICA"="VICERRECTORIA ACADEMICA")) |>
+    dplyr::select(-dplyr::any_of(c("rut_sin_dv","dv")))
+  assert_unica(info_doc, "docente_id", "Información del Docente")
+  dip_ids <- p |> dplyr::filter(es_diplomado %in% TRUE) |> dplyr::group_by(docente_id) |>
+    dplyr::summarise(anio_certificado=min(anio_certificado, na.rm=TRUE), .groups="drop")
+  reporte(dplyr::bind_rows(
+    c |> dplyr::distinct(anio, docente_id) |> dplyr::group_by(anio) |>
+      dplyr::summarise(grupo="docentes con carga", total=dplyr::n(), con_info=sum(docente_id %in% info_doc$docente_id), .groups="drop") |>
+      dplyr::mutate(anio=as.character(anio)),
+    dip_ids |> dplyr::group_by(anio=as.character(anio_certificado)) |>
+      dplyr::summarise(grupo="diplomado (año del certificado)", total=dplyr::n(), con_info=sum(docente_id %in% info_doc$docente_id), .groups="drop")),
+    "auditoria_info_docente_cobertura.csv")
+  if (isTRUE(cfg$analisis$generar_exportaciones_detalle)) guardar(info_doc, "info_docente_restringido.csv")
+  message("Información del Docente: ", nrow(info_doc), " docentes vigentes")
+}

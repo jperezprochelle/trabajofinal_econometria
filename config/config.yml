@@ -5,6 +5,10 @@ archivos:
   cohortes: "datos/originales/cohortes_diplomado.csv"
   # Docentes de la versión 6 (empieza nov. 2026). Columnas: rut_sin_dv, dv, anio_certificacion_esperado
   cohorte_futura: "datos/originales/cohorte_futura.csv"
+  # Postulantes al diplomado por versión (Ricardo, nov. 2026): cohortes futuras y desertores
+  postulantes: "datos/originales/Postulantes Diplomado.xlsx"
+  # Características de los docentes VIGENTES hoy (foto actual, no histórica)
+  info_docente: "datos/originales/Información del Docente.xlsx"
 analisis:
   nombre_programa: "DIPLOMADO EN DOCENCIA PARA LA EDUCACION SUPERIOR"
   anio_inicio: 2021
@@ -26,3 +30,25 @@ did:
   estimar: true        # false: solo exporta los conteos
   bootstrap_iter: 999
   semilla: 20261119
+  # Año de certificado supuesto para los postulantes cuya versión "aún no inicia"
+  anio_cert_no_inicia: 2027
+  # Robustez: repetir las especificaciones principales cortando el panel en este año (en 2026 hay muy pocos controles)
+  anio_corte_robustez: 2025
+# Script 07: replicación de Angrist y Lavy (DiD con controles emparejados por cohorte). Ver encabezado del 07.
+emparejamiento:
+  activar: true
+  # Año de inicio de las versiones que no están en la base de postulantes (la que certificó en 2023 empezó en 2022: Reunión)
+  inicio_supuesto:
+    "2023": 2022
+  # Mes de inicio supuesto cuando no se conoce (solo afecta al panel semestral): octubre, como las demás versiones
+  mes_inicio_supuesto: 10
+  ratio: 3              # controles por tratado (principal)
+  ratio_robustez: 5
+  distancia: "robust_mahalanobis"
+  caliper_de: 0.25      # en desviaciones estándar de cada variable
+  caliper_variables: ["nota_rel_pre", "aprob_rel_pre", "prop_trim_pre"]
+  # Sensibilidad exacto_ampliado: variables exactas además del régimen principal
+  exacto_robustez: ["con_formacion_previa"]
+  resultados_principales: ["nota_rel", "aprob_rel"]
+  resultados_robustez: ["nota", "aprob"]
+  semilla: 20261121
