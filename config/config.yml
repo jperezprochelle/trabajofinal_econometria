@@ -52,3 +52,5 @@ emparejamiento:
   resultados_principales: ["nota_rel", "aprob_rel"]
   resultados_robustez: ["nota", "aprob"]
   semilla: 20261121
+inferencia:
+  alpha: 0.07
