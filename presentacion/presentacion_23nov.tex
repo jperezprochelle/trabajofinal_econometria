@@ -1,0 +1,609 @@
+\documentclass[10pt,aspectratio=169]{beamer}
+\usetheme{Madrid}
+\usecolortheme{dolphin}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[spanish,es-noshorthands,es-tabla,es-nodecimaldot]{babel}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,shapes.geometric,calc,patterns}
+\usepackage{pgfplots}
+\usepgfplotslibrary{groupplots}
+\pgfplotsset{compat=1.16}
+\usepackage{graphicx}
+
+\setbeamertemplate{navigation symbols}{}
+\setbeamertemplate{itemize items}[circle]
+\setbeamerfont{caption}{size=\scriptsize}
+
+% Recuadro de síntesis al pie de la lámina: \sintesis{título}{texto}
+\newcommand{\sintesis}[2]{%
+  \begin{block}{#1}#2\end{block}}
+
+\title[Efecto del diplomado: avance]{Efecto del Diplomado en Docencia para la Educación Superior\\ sobre los resultados de los cursos}
+\subtitle{Avance: diseño actualizado y primeros resultados}
+\author[G. Repetto y J. Pérez]{Gabriela Repetto \and Josefina Pérez}
+\institute[ICS3564]{ICS3564 Econometría Avanzada\\ Pontificia Universidad Católica de Chile}
+\date[23 nov 2026]{Reunión de avance · 23 de noviembre de 2026}
+
+\begin{document}
+
+% ============================================================
+\begin{frame}
+  \titlepage
+\end{frame}
+
+% ============================================================
+\begin{frame}{Objetivo de esta reunión}
+  El 19 de noviembre les presentamos el encuadre y un análisis inicial. Hoy venimos a mostrar \alert{qué cambió desde entonces} y \alert{qué dicen los primeros resultados}:
+  \vspace{0.6em}
+  \begin{enumerate}
+    \item \textbf{Lo que incorporamos:} las bases nuevas que nos enviaron y una definición más precisa de cuándo un docente empieza el diplomado.
+    \item \textbf{Los resultados:} qué encontramos sobre el promedio y la aprobación de los cursos, y qué tan sólido es.
+    \item \textbf{Lo que falta:} decisiones y datos que dependen de ustedes antes de la entrega del 27 de noviembre.
+  \end{enumerate}
+  \vspace{0.6em}
+  \sintesis{En una frase}{Con los datos actuales no encontramos un efecto del diplomado que se sostenga en todas las formas de medirlo. Eso no prueba que no lo haya: los resultados son imprecisos y hay supuestos que todavía no podemos verificar.}
+\end{frame}
+
+\begin{frame}{Contenido}
+  \tableofcontents
+\end{frame}
+
+% ============================================================
+\section{Qué cambió desde el 19 de noviembre}
+% ============================================================
+
+\begin{frame}{Lo que recibimos y lo que hicimos con eso}
+  \begin{columns}[T]
+    \begin{column}{0.48\textwidth}
+      \textbf{Bases nuevas (21 de noviembre)}
+      \begin{itemize}\small
+        \item \textbf{Postulantes al diplomado:} 100 docentes, con las fechas de las versiones desde octubre de 2023. Es la pieza que más cambió el análisis.
+        \item \textbf{Información del docente:} sexo, edad y grado académico. Es una foto de hoy y solo cubre a los docentes vigentes, así que no entra en el análisis principal.
+        \item \textbf{Cursos y resultados de aprendizaje} de la trayectoria 2026: para describir el diplomado y elegir la segunda formación.
+      \end{itemize}
+    \end{column}
+    \begin{column}{0.48\textwidth}
+      \textbf{Cambios en el análisis}
+      \begin{itemize}\small
+        \item El tratamiento ahora parte cuando el docente \textbf{inicia} el diplomado, no cuando se certifica.
+        \item Corregimos el cambio de composición con una \textbf{nota relativa al programa}.
+        \item Replicamos el diseño de \textbf{Angrist y Lavy} (controles emparejados).
+        \item Agregamos pruebas de robustez: otros grupos de control, otras ventanas de tiempo y pruebas de tendencias previas.
+        \item Nivel de significancia: \textbf{7 \%} (intervalos de 93 \%).
+      \end{itemize}
+    \end{column}
+  \end{columns}
+  \vspace{0.4em}
+  \sintesis{Por qué importa la base de postulantes}{Nos permitió saber quién empezó el diplomado y cuándo, incluidos quienes no lo terminaron. Antes solo sabíamos quién se certificó.}
+\end{frame}
+
+\begin{frame}{Cambio principal: el tratamiento empieza al iniciar el diplomado}
+  \begin{center}
+  \begin{tikzpicture}[x=1.9cm, y=0.5cm]
+    \foreach \a in {2022,...,2026} { \node[font=\small] at (\a-2022+0.5, 5.1) {\a}; \draw[gray!40] (\a-2022,4.7) -- (\a-2022,-0.4); }
+    \draw[gray!40] (5,4.7) -- (5,-0.4);
+    % Versión certificada en 2023: fechas desconocidas
+    \fill[pattern=north east lines, pattern color=gray] (0.0,3.75) rectangle (1.45,4.35);
+    \node[anchor=east, font=\scriptsize] at (0,4.05) {Certificó en 2023};
+    \node[anchor=west, font=\scriptsize] at (1.5,4.05) {inicio y término desconocidos};
+    % 23 oct 2023 - 31 may 2024
+    \fill[orange!55] (1.81,2.75) rectangle (2.41,3.35); \node[anchor=east, font=\scriptsize] at (0,3.05) {Inicio 2023};
+    \node[anchor=west, font=\scriptsize] at (2.45,3.05) {oct 2023 -- may 2024};
+    % 21 oct 2024 - 24 may 2025
+    \fill[orange!55] (2.80,1.75) rectangle (3.40,2.35); \node[anchor=east, font=\scriptsize] at (0,2.05) {Inicio 2024};
+    \node[anchor=west, font=\scriptsize] at (3.44,2.05) {oct 2024 -- may 2025};
+    % 10 nov 2025 - 20 jun 2026
+    \fill[orange!55] (3.86,0.75) rectangle (4.47,1.35); \node[anchor=east, font=\scriptsize] at (0,1.05) {Inicio 2025};
+    \node[anchor=east, font=\scriptsize] at (3.82,1.05) {nov 2025 -- jun 2026};
+    % 8 jun 2026 - 17 nov 2026
+    \fill[orange!55] (4.44,-0.25) rectangle (4.88,0.35); \node[anchor=east, font=\scriptsize] at (0,0.05) {Inicio 2026};
+    \node[anchor=east, font=\scriptsize] at (4.40,0.05) {jun -- nov 2026};
+  \end{tikzpicture}
+  \end{center}
+  {\scriptsize Fechas de la base de postulantes. Cada barra es una versión.}
+  \vspace{0.2em}
+  \begin{columns}[T]
+    \begin{column}{0.5\textwidth}\small
+      \textbf{Nueva regla}
+      \begin{itemize}
+        \item Un docente queda tratado desde su \textbf{primera postulación a una versión que efectivamente empezó}, aunque después abandone o retome.
+        \item Lo que medimos es el efecto de \textbf{iniciar} el diplomado, no de certificarse.
+        \item Quien empezó y no se certificó ya no se usa como control.
+      \end{itemize}
+    \end{column}
+    \begin{column}{0.48\textwidth}\small
+      \textbf{Dos consecuencias}
+      \begin{itemize}
+        \item Los docentes certificados en 2023 \alert{quedan fuera}: no sabemos cuándo empezó su versión.
+        \item Con datos anuales, el año de inicio cuenta como primer año tratado aunque la versión empiece en octubre o noviembre. Por eso también miramos el efecto \textbf{desde el año siguiente}.
+      \end{itemize}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Quiénes sostienen la evaluación}
+  \begin{columns}[c]
+    \begin{column}{0.53\textwidth}
+      \begin{table}\footnotesize
+        \begin{tabular}{lccc}
+          \toprule
+          Año de & Iniciaron & Con datos & Con datos antes \\
+          inicio & (en el panel) & antes y desde & y estrictamente \\
+          & & el inicio & después \\
+          \midrule
+          2023 & 20 & 13 & 10 \\
+          2024 & 15 & 8 & 7 \\
+          2025 & 9 & 7 & 3 \\
+          2026 & 14 & 7 & 0 \\
+          \midrule
+          Total & 58 & \alert{35} & 20 \\
+          \bottomrule
+        \end{tabular}
+      \end{table}
+      {\scriptsize Panel: secciones con un solo docente y 5 o más estudiantes. De los 23 que no entran, 20 no tienen cursos registrados antes de su inicio.}
+    \end{column}
+    \begin{column}{0.45\textwidth}
+      \begin{center}
+      \begin{tikzpicture}[caja/.style={rectangle, draw=blue!50!black, fill=blue!8, align=center, font=\small, minimum height=0.65cm}]
+        \node[caja, minimum width=5.4cm] (a) {100 postularon al diplomado};
+        \node[caja, minimum width=4.7cm, below=0.15cm of a] (b) {92 iniciaron una versión};
+        \node[caja, minimum width=4.0cm, below=0.15cm of b] (c) {58 tienen cursos en el panel};
+        \node[caja, minimum width=3.3cm, below=0.15cm of c, fill=orange!20, draw=orange!60!black] (d) {35 se pueden comparar\\ antes y desde el inicio};
+      \end{tikzpicture}
+      \end{center}
+      {\scriptsize Grupo de comparación: unos 1.350 docentes que nunca iniciaron el diplomado. Además se excluyen 11 docentes certificados sin fecha de inicio.}
+    \end{column}
+  \end{columns}
+  \vspace{0.2em}
+  \sintesis{Lo que esto significa}{La evaluación descansa en 35 docentes, y en el año más lejano después del inicio, solo en 8. Es poco para detectar efectos moderados.}
+\end{frame}
+
+\begin{frame}{Cómo corregimos el cambio de composición}
+  \begin{columns}[T]
+    \begin{column}{0.5\textwidth}\small
+      \textbf{El problema (visto el 19 de noviembre)}
+      \begin{itemize}
+        \item Los programas trimestrales ponen notas más altas y crecieron mucho, sobre todo en los cursos de docentes \textbf{sin} diplomado.
+        \item Comparar notas tal cual mezcla el efecto del diplomado con ese cambio.
+      \end{itemize}
+      \vspace{0.3em}
+      \textbf{La corrección: nota relativa al programa}
+      \begin{itemize}
+        \item A la nota de cada estudiante le restamos el promedio de \textbf{los demás estudiantes de su mismo programa y período}, sin contar su propia sección. Lo mismo con la aprobación.
+        \item Así medimos si el curso del docente pone más o menos nota que lo habitual en ese programa.
+      \end{itemize}
+    \end{column}
+    \begin{column}{0.48\textwidth}
+      \begin{tikzpicture}[caja/.style={rectangle, rounded corners, draw=blue!50!black, fill=blue!8, align=center, font=\small, minimum width=5.6cm, minimum height=0.75cm}]
+        \node[caja] (a) {Nota del estudiante: \textbf{5,8}};
+        \node[caja, below=0.25cm of a] (b) {Promedio de su programa en el período,\\ sin su sección: \textbf{5,5}};
+        \node[caja, below=0.25cm of b, fill=orange!20, draw=orange!60!black] (c) {Nota relativa: \textbf{+0,3}};
+        \draw[-{Stealth}, thick] (a) -- (b); \draw[-{Stealth}, thick] (b) -- (c);
+      \end{tikzpicture}\par
+      {\scriptsize Ejemplo ilustrativo, no son datos reales.}
+      \vspace{0.5em}
+
+      {\small Tiene referencia el \textbf{99,996 \%} de las matrículas (423.384 de 423.399).}
+    \end{column}
+  \end{columns}
+  \sintesis{Qué no corrige}{La nota relativa saca las diferencias entre programas, pero no la selección de quiénes llegan al diplomado ni el hecho de que la nota la pone el propio docente.}
+\end{frame}
+
+% ============================================================
+\section{Resultados}
+% ============================================================
+
+\begin{frame}{Resultado principal}
+  \begin{table}\small
+    \begin{tabular}{lcccc}
+      \toprule
+      & \multicolumn{2}{c}{Datos hasta 2025} & \multicolumn{2}{c}{Datos hasta 2026} \\
+      \cmidrule(lr){2-3}\cmidrule(lr){4-5}
+      & Efecto & IC 93 \% & Efecto & IC 93 \% \\
+      \midrule
+      \textbf{Nota relativa al programa} (puntos) & $-$0,00 & [$-$0,17; 0,16] & $-$0,02 & [$-$0,17; 0,12] \\
+      \textbf{Aprobación relativa al programa} (pp) & $-$1,6 & [$-$5,6; 2,4] & $-$2,2 & [$-$5,6; 1,3] \\
+      \midrule
+      Nota tal cual (puntos) & $-$0,09 & [$-$0,25; 0,06] & $-$0,13 & [$-$0,29; 0,03] \\
+      Aprobación tal cual (pp) & $-$2,1 & [$-$5,6; 1,5] & $-$3,1 & [$-$6,4; 0,2] \\
+      \midrule
+      Docentes que iniciaron / nunca iniciados & \multicolumn{2}{c}{26 / 1.246} & \multicolumn{2}{c}{35 / 1.351} \\
+      \bottomrule
+    \end{tabular}
+  \end{table}
+  {\scriptsize Diferencias en diferencias escalonadas (Callaway y Sant'Anna, 2021). Efecto promedio desde el año de inicio. Controles: docentes que todavía no inician o nunca iniciaron. pp: puntos porcentuales. 2026 solo tiene los períodos 202605, 202610 y 202615.}
+  \vspace{0.3em}
+  \begin{itemize}\small
+    \item Ningún efecto es distinguible de cero al 7 \%.
+    \item Con la nota tal cual, el efecto es negativo. Con la nota relativa, \textbf{casi desaparece}: la mayor parte de lo negativo venía de la composición.
+  \end{itemize}
+  \sintesis{Lectura}{Con 93 \% de confianza, el efecto sobre la nota relativa está entre $-$0,17 y +0,12 puntos. Descartamos efectos grandes en cualquiera de las dos direcciones.}
+\end{frame}
+
+\begin{frame}{Cómo evolucionan los cursos alrededor del inicio}
+  \begin{columns}[c]
+    \begin{column}{0.64\textwidth}
+      \begin{tikzpicture}
+        \begin{groupplot}[group style={group size=2 by 1, horizontal sep=1.4cm},
+            width=5.3cm, height=5.0cm, xmin=-2.6, xmax=3.6, xtick={-2,...,3},
+            axis lines=left, xlabel={Años desde el inicio}, xlabel style={font=\scriptsize},
+            ticklabel style={font=\scriptsize},
+            yticklabel style={/pgf/number format/use comma, /pgf/number format/fixed}]
+          \nextgroupplot[title={\scriptsize Nota (puntos)}, ymin=-0.85, ymax=0.4]
+            \draw[gray] (axis cs:-2.6,0) -- (axis cs:3.6,0);
+            \draw[dashed, gray] (axis cs:-0.5,-0.85) -- (axis cs:-0.5,0.4);
+            \addplot[only marks, mark=*, blue!60!black, error bars/.cd, y dir=both, y explicit]
+              coordinates {(-2,-0.202) +- (0,0.262) (-1,0.115) +- (0,0.195) (0,-0.104) +- (0,0.117)
+                           (1,-0.019) +- (0,0.314) (2,-0.153) +- (0,0.311) (3,-0.434) +- (0,0.323)};
+          \nextgroupplot[title={\scriptsize Aprobación (pp)}, ymin=-17, ymax=8]
+            \draw[gray] (axis cs:-2.6,0) -- (axis cs:3.6,0);
+            \draw[dashed, gray] (axis cs:-0.5,-17) -- (axis cs:-0.5,8);
+            \addplot[only marks, mark=*, orange!80!black, error bars/.cd, y dir=both, y explicit]
+              coordinates {(-2,-1.08) +- (0,5.54) (-1,2.05) +- (0,3.11) (0,-1.34) +- (0,2.25)
+                           (1,-2.43) +- (0,4.16) (2,-3.67) +- (0,5.66) (3,-8.13) +- (0,6.88)};
+        \end{groupplot}
+      \end{tikzpicture}\par
+      {\scriptsize Nota y aprobación tal cual, datos hasta 2026. Barras: intervalo de 93 \% punto a punto. Línea punteada: inicio.}
+    \end{column}
+    \begin{column}{0.35\textwidth}\scriptsize
+      \textbf{Cuántos docentes hay detrás de cada punto}
+      \begin{table}\scriptsize
+        \begin{tabular}{lcc}
+          \toprule
+          Año & Docentes & Cohortes \\
+          \midrule
+          0 & 32 & 4 \\
+          +1 & 17 & 3 \\
+          +2 & 13 & 2 \\
+          +3 & \alert{8} & \alert{1} \\
+          \bottomrule
+        \end{tabular}
+      \end{table}
+      \begin{itemize}
+        \item Antes del inicio no hay diferencias claras.
+        \item El año +3 es negativo ($-$0,43 puntos), pero depende de \textbf{8 docentes} de una sola cohorte y solo se observa en 2026, que está incompleto.
+        \item Es la versión tal cual de la nota: no corrige composición.
+      \end{itemize}
+    \end{column}
+  \end{columns}
+  \sintesis{Cómo tomar el año +3}{Es una señal a seguir con más datos, no un efecto de largo plazo del diplomado.}
+\end{frame}
+
+\begin{frame}{¿Se sostiene el resultado? Pruebas de robustez}
+  \begin{table}\scriptsize
+    \begin{tabular}{p{6.4cm}cc}
+      \toprule
+      Variante (nota y aprobación tal cual, salvo que se indique) & Nota (puntos) & Aprobación (pp) \\
+      \midrule
+      Principal, hasta 2026 & $-$0,13 & $-$3,1 \\
+      Solo postulantes como control (142 observaciones) & $-$0,17 & $-$6,1 \\
+      Sin la cohorte 2025 (28 tratados) & $-$0,13 & $-$2,9 \\
+      Hasta 2025 & $-$0,09 & $-$2,1 \\
+      Desde el año siguiente al inicio, hasta 2025 & $-$0,13 & $-$3,4 \\
+      Desde el año siguiente al inicio, hasta 2026 & \alert{$-$0,20}* & \alert{$-$4,7}* \\
+      Mismos 26 docentes, hasta 2025 & $-$0,10 & $-$2,1 \\
+      Mismos 26 docentes, hasta 2026 & \alert{$-$0,19}* & $-$3,4 \\
+      \midrule
+      Nota y aprobación \textbf{relativas}, hasta 2026 & $-$0,02 & $-$2,2 \\
+      \bottomrule
+    \end{tabular}
+  \end{table}
+  {\scriptsize * Distinto de cero al 7 \%. Callaway y Sant'Anna con controles que no han iniciado.}
+  \vspace{0.2em}
+  \begin{itemize}\small
+    \item Con la nota tal cual, el signo es siempre negativo, pero solo cruza el umbral del 7 \% cuando se incluye \textbf{2026}.
+    \item Esas variantes no tienen versión relativa todavía, y en la principal la versión relativa queda cerca de cero.
+  \end{itemize}
+  \sintesis{Lectura}{Ningún resultado se mantiene en todas las variantes. Lo poco significativo depende de 2026 (incompleto) y de la nota sin corregir por composición.}
+\end{frame}
+
+\begin{frame}{¿Evolucionaban parecido antes del diplomado?}
+  \begin{columns}[c]
+    \begin{column}{0.55\textwidth}
+      \begin{table}\small
+        \begin{tabular}{lcc}
+          \toprule
+          Prueba conjunta de diferencias & Hasta & Hasta \\
+          antes del inicio (valor p) & 2025 & 2026 \\
+          \midrule
+          Nota tal cual & \alert{0,059} & 0,076 \\
+          Nota relativa & \alert{0,040} & 0,109 \\
+          Aprobación tal cual & 0,269 & 0,264 \\
+          Aprobación relativa & 0,232 & 0,232 \\
+          \midrule
+          Nota, sin la cohorte 2025 & -- & \alert{0,023} \\
+          \bottomrule
+        \end{tabular}
+      \end{table}
+      {\scriptsize En rojo, valores bajo 0,07: se rechaza que los grupos evolucionaran igual antes del inicio.}
+    \end{column}
+    \begin{column}{0.43\textwidth}\small
+      \textbf{Por qué importa}\\
+      El método supone que, sin diplomado, los docentes que lo inician habrían evolucionado como los demás. Lo único que podemos revisar son los años previos.
+      \vspace{0.4em}
+
+      \textbf{Qué muestran}
+      \begin{itemize}
+        \item En \textbf{aprobación} no hay señales de diferencias previas.
+        \item En \textbf{notas} sí hay señales en varias versiones, también en la nota relativa.
+        \item No rechazar tampoco prueba que el supuesto se cumpla: con pocos docentes, la prueba tiene poca potencia.
+      \end{itemize}
+    \end{column}
+  \end{columns}
+  \sintesis{Consecuencia}{Para las notas el supuesto central está en duda. La aprobación es el resultado con identificación más limpia, aunque igual es impreciso.}
+\end{frame}
+
+\begin{frame}{Replicación de Angrist y Lavy: controles emparejados}
+  \begin{columns}[T]
+    \begin{column}{0.4\textwidth}\small
+      \textbf{Qué hicimos}
+      \begin{itemize}
+        \item Para cada cohorte de inicio, buscamos \textbf{3 docentes que nunca iniciaron} y que antes eran parecidos: nota, aprobación, tamaño de los cursos y proporción de cursos en línea.
+        \item Luego comparamos cuánto cambiaron sus cursos, como Angrist y Lavy con escuelas parecidas en sus puntajes previos.
+      \end{itemize}
+    \end{column}
+    \begin{column}{0.58\textwidth}
+      \begin{table}\scriptsize
+        \begin{tabular}{lcccc}
+          \toprule
+          Cohorte & Tratados / & Nota & Aprobación & Mayor desbalance \\
+          de inicio & controles & (puntos) & (pp) & después (DME) \\
+          \midrule
+          2023 & 13 / 39 & +0,05 & +0,6 & 0,03 \\
+          2024 & 7 / 21 & $-$0,08 & $-$4,0 & 0,26 \\
+          2025 & 6 / 18 & $-$0,14 & +2,3 & 0,18 \\
+          2026 & 7 / 21 & +0,10 & 0,0 & 0,31 \\
+          \bottomrule
+        \end{tabular}
+      \end{table}
+      {\scriptsize Ninguno es distinto de cero al 7 \%. DME: diferencia de medias estandarizada; bajo 0,1 se considera buen balance.}
+    \end{column}
+  \end{columns}
+  \vspace{0.4em}
+  \begin{itemize}\small
+    \item Los signos cambian de una cohorte a otra y los intervalos son muy anchos: cada cohorte tiene entre 6 y 13 docentes.
+    \item Solo la cohorte 2023 queda bien equilibrada. En las otras, persisten diferencias en el tamaño de los cursos o en los resultados previos.
+  \end{itemize}
+  \sintesis{Lectura}{El método del paper tampoco encuentra un efecto, y muestra con claridad el problema de fondo: hay pocos docentes para comparar.}
+\end{frame}
+
+\begin{frame}{Contraste con Angrist y Lavy}
+  \begin{table}\scriptsize
+    \begin{tabular}{p{2.8cm}p{5.2cm}p{5.2cm}}
+      \toprule
+      & \textbf{Angrist y Lavy} & \textbf{Este estudio} \\
+      \midrule
+      Intervención & Capacitación semanal en la escuela, asignada por financiamiento & Diplomado voluntario, con carta e invitación de la jefatura \\
+      Resultado & Pruebas externas de lectura y matemáticas & Notas y aprobación que pone el mismo docente \\
+      Tamaño & Escuelas completas; submuestra emparejada de 5 escuelas tratadas y 3 de control & 35 docentes en el DiD; 6 a 13 por cohorte en el emparejamiento \\
+      Hallazgo & Efecto positivo; estimación conservadora de 0,25 desviaciones estándar & Sin efecto distinguible de cero \\
+      \bottomrule
+    \end{tabular}
+  \end{table}
+  {\scriptsize Cifras del paper según el documento de trabajo NBER 6781 (1998); falta confirmarlas con la versión publicada (2001).}
+  \vspace{0.3em}
+  \begin{itemize}\small
+    \item Ellos observaron que el DiD daba más que la comparación controlando por el puntaje previo, porque las escuelas tratadas partían más bajas. Por eso emparejaron en el puntaje previo. Nosotras seguimos la misma lógica.
+    \item Para comparar magnitudes en desviaciones estándar nos falta calcular la dispersión de las notas.
+  \end{itemize}
+  \sintesis{Por qué pueden diferir}{No es solo otro país y otro nivel educativo: aquí la participación es voluntaria y el resultado lo mide el propio docente, que en el módulo 3 aprende a diseñar evaluaciones.}
+\end{frame}
+
+\begin{frame}{¿Qué tan grande tendría que ser el efecto para poder verlo?}
+  \begin{table}\small
+    \begin{tabular}{lcc}
+      \toprule
+      & Nota (puntos) & Aprobación (pp) \\
+      \midrule
+      19 de noviembre (certificación, nunca tratados) & 0,32 & 6,0 \\
+      Hoy, valores tal cual (inicio, hasta 2026) & 0,24 & 4,8 \\
+      Hoy, valores relativos al programa (inicio, hasta 2026) & \textbf{0,21} & \textbf{5,0} \\
+      \bottomrule
+    \end{tabular}
+  \end{table}
+  {\scriptsize Efecto mínimo detectable con 80 \% de potencia al 7 \% de significancia: 2,65 veces el error estándar.}
+  \vspace{0.4em}
+  \begin{itemize}
+    \item La precisión mejoró respecto del 19 de noviembre, pero un efecto de unas \textbf{dos décimas de nota} o \textbf{5 puntos de aprobación} sigue siendo el mínimo que podemos detectar.
+    \item Como referencia, el promedio de los cursos es cerca de 5,1 y la aprobación cerca de 88 \%.
+  \end{itemize}
+  \sintesis{La pregunta que sí podemos responder}{Podemos descartar efectos grandes. Para efectos moderados, que son los más realistas para una formación docente, todavía faltan docentes y años de seguimiento.}
+\end{frame}
+
+% ============================================================
+\section{Qué podemos concluir}
+% ============================================================
+
+\begin{frame}{Una precaución sobre la aprobación}
+  \begin{columns}[T]
+    \begin{column}{0.5\textwidth}\small
+      \textbf{Qué pasó}
+      \begin{itemize}
+        \item El efecto sobre la aprobación tal cual ($-$3,1 pp) está justo en el borde del 7 \%.
+        \item Su error estándar se calcula por remuestreo y cambió entre ejecuciones y módulos: entre 0,017 y 0,019.
+        \item Con eso, el valor p queda entre 0,07 y 0,10. En una ejecución anterior salió significativo; en la de hoy, no.
+      \end{itemize}
+    \end{column}
+    \begin{column}{0.46\textwidth}\small
+      \textbf{Qué decidimos}
+      \begin{itemize}
+        \item \textbf{No declarar} ese efecto como significativo hasta unificar la configuración del cálculo.
+        \item No elegir la versión que da significancia.
+        \item El efecto estimado ($-$3,1 pp) es el mismo en todas las ejecuciones: lo que cambia es la incertidumbre.
+      \end{itemize}
+    \end{column}
+  \end{columns}
+  \vspace{0.6em}
+  \sintesis{Por qué lo mostramos}{Un resultado que depende de una diferencia de 0,002 en el error estándar no es una base sólida para concluir que el diplomado baja la aprobación.}
+\end{frame}
+
+\begin{frame}{Qué podemos y qué no podemos concluir hoy}
+  \begin{columns}[T]
+    \begin{column}{0.48\textwidth}
+      \begin{block}{Podemos afirmar}
+        \begin{itemize}\small
+          \item No hay un efecto del diplomado que se sostenga en todas las formas de medirlo.
+          \item Corregir la composición de los programas acerca las estimaciones a cero.
+          \item Se pueden descartar efectos grandes: más de unas dos décimas de nota relativa.
+          \item Los dos métodos (DiD escalonado y controles emparejados) llegan a la misma conclusión.
+        \end{itemize}
+      \end{block}
+    \end{column}
+    \begin{column}{0.48\textwidth}
+      \begin{alertblock}{Todavía no podemos afirmar}
+        \begin{itemize}\small
+          \item Que el diplomado no tenga efecto: la muestra no alcanza para efectos moderados.
+          \item Que la caída del año +3 sea real: depende de 8 docentes y de un 2026 incompleto.
+          \item Que los grupos evolucionaran igual antes, en el caso de las notas.
+          \item Si un cambio en las notas sería aprendizaje o una forma distinta de evaluar.
+        \end{itemize}
+      \end{alertblock}
+    \end{column}
+  \end{columns}
+  \vspace{0.4em}
+  {\small Las cifras son de la ejecución del 22 de noviembre y todavía pueden cambiar en la versión final.}
+\end{frame}
+
+\begin{frame}{Las dos pruebas que nos pidieron}
+  \begin{columns}[T]
+    \begin{column}{0.48\textwidth}
+      \begin{block}{Trade-off: mismo diplomado, varios modelos}
+        \small Hecha. Comparamos:
+        \begin{itemize}\small
+          \item tres grupos de control,
+          \item notas tal cual y relativas,
+          \item dos ventanas (hasta 2025 y hasta 2026),
+          \item efecto desde el inicio y desde el año siguiente,
+          \item DiD escalonado y controles emparejados.
+        \end{itemize}
+        \small \textbf{Resultado:} la conclusión depende sobre todo de \textbf{corregir la composición} y de \textbf{incluir 2026}. El grupo de control cambia poco.
+      \end{block}
+    \end{column}
+    \begin{column}{0.48\textwidth}
+      \begin{alertblock}{Sensibilidad: otra formación}
+        \small \textbf{Pendiente.} El procedimiento está listo para aplicarse a otra formación, pero necesitamos que nos ayuden a elegirla.
+        \vspace{0.3em}
+
+        \small Requisitos:
+        \begin{itemize}\small
+          \item contenido estable entre 2021 y 2026,
+          \item suficientes aprobados con fecha,
+          \item docentes con cursos antes y después.
+        \end{itemize}
+      \end{alertblock}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+% ============================================================
+\section{Validación con el equipo}
+% ============================================================
+
+\begin{frame}{Preguntas para ustedes}
+  \small
+  \begin{enumerate}
+    \item \textbf{Versión certificada en 2023.} ¿En qué mes empezó y terminó? Con esa fecha podemos recuperar a 11 docentes que hoy quedan fuera, y es la cohorte con más años de seguimiento.
+    \item \textbf{Iniciar o certificarse.} Hoy medimos el efecto de \emph{iniciar} el diplomado. ¿Es eso lo que les interesa, o el efecto de completarlo?
+    \item \textbf{Secciones con varios docentes.} Ricardo iba a confirmar cómo se reparten los porcentajes de responsabilidad que suman más de 100. Lo necesitamos para usar la regla acordada (todos los docentes, con igual peso).
+    \item \textbf{Segunda formación.} ¿Cuál usamos para la prueba de sensibilidad?
+    \item \textbf{Modernización curricular 2026.} ¿Está disponible la tabla de equivalencias de asignaturas?
+    \item \textbf{Documento de la unidad.} ¿Podemos describir el marco metodológico de la unidad en el informe, o lo dejamos fuera?
+  \end{enumerate}
+\end{frame}
+
+\begin{frame}{Próximos pasos (entrega el 27 de noviembre)}
+  \begin{table}\small
+    \begin{tabular}{lp{10.5cm}}
+      \toprule
+      Fecha & Tarea \\
+      \midrule
+      23 nov & Unificar la configuración del cálculo de errores estándar y fijar las tablas finales. \\
+      24--25 nov & Redactar el informe: replicación de Angrist y Lavy, DiD escalonado y pruebas de robustez. \\
+      26 nov & Revisión completa y prueba del código desde cero. \\
+      27 nov & Entrega del informe y del código documentado. \\
+      \bottomrule
+    \end{tabular}
+  \end{table}
+  \vspace{0.4em}
+  \begin{itemize}
+    \item Incorporamos sus respuestas de hoy si llegan a tiempo. Si no, quedan como limitación y recomendación para la unidad.
+    \item El código queda listo para volver a correrse con datos nuevos, por ejemplo cuando la versión de junio a noviembre de 2026 tenga cursos posteriores.
+  \end{itemize}
+  \vspace{0.3em}
+  \begin{block}{Lo que más nos ayudaría}
+    La fecha de la versión certificada en 2023 y la elección de la segunda formación.
+  \end{block}
+\end{frame}
+
+\begin{frame}
+  \begin{center}
+    {\Large ¡Gracias!}\\[1em]
+    Comentarios, dudas y correcciones son muy bienvenidos.
+  \end{center}
+\end{frame}
+
+% ============================================================
+\appendix
+\section*{Respaldo}
+% ============================================================
+
+\begin{frame}{Respaldo: DiD escalonado por grupo de control (hasta 2026)}
+  \begin{table}\scriptsize
+    \begin{tabular}{lcccccc}
+      \toprule
+      Grupo de control & \multicolumn{2}{c}{Nota (puntos)} & \multicolumn{2}{c}{Aprobación (pp)} & Tratados & Observaciones \\
+      \cmidrule(lr){2-3}\cmidrule(lr){4-5}
+      & Efecto & IC 93 \% & Efecto & IC 93 \% & & \\
+      \midrule
+      Todavía no inician & $-$0,13 & [$-$0,29; 0,03] & $-$3,1 & [$-$6,3; 0,1] & 35 & 3.679 \\
+      Nunca iniciaron & $-$0,13 & [$-$0,30; 0,03] & $-$3,1 & [$-$6,4; 0,3] & 35 & 3.679 \\
+      Solo postulantes & $-$0,17 & [$-$0,62; 0,28] & $-$6,1 & [$-$18,7; 6,5] & 35 & 142 \\
+      \bottomrule
+    \end{tabular}
+  \end{table}
+  \vspace{0.3em}
+  \begin{itemize}\small
+    \item Callaway y Sant'Anna (2021), panel anual docente $\times$ año, solo secciones con un docente, ponderadas por estudiantes. Bootstrap de 999 repeticiones.
+    \item De las 20 combinaciones cohorte--año, 16 se pueden estimar. Las 4 restantes se omiten al promediar.
+    \item Año +3 con bandas simultáneas de 93 \%: nota [$-$0,83; $-$0,04]; aprobación [$-$16,7; +0,5] pp.
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Respaldo: balance del emparejamiento}
+  \begin{table}\scriptsize
+    \begin{tabular}{lcccccccc}
+      \toprule
+      & \multicolumn{2}{c}{2023} & \multicolumn{2}{c}{2024} & \multicolumn{2}{c}{2025} & \multicolumn{2}{c}{2026} \\
+      \cmidrule(lr){2-3}\cmidrule(lr){4-5}\cmidrule(lr){6-7}\cmidrule(lr){8-9}
+      Variable previa & Antes & Después & Antes & Después & Antes & Después & Antes & Después \\
+      \midrule
+      Nota & $-$0,06 & 0,00 & $-$0,15 & 0,01 & $-$0,21 & $-$0,18 & $-$0,04 & $-$0,13 \\
+      Aprobación & 0,15 & 0,01 & 0,01 & $-$0,02 & 0,05 & $-$0,16 & $-$0,11 & $-$0,31 \\
+      Tamaño de los cursos (log) & 0,16 & 0,02 & 0,18 & $-$0,26 & $-$0,49 & $-$0,09 & $-$0,15 & 0,03 \\
+      Proporción en línea & 0,01 & 0,03 & $-$0,21 & 0,06 & $-$0,21 & $-$0,03 & 0,51 & 0,02 \\
+      \bottomrule
+    \end{tabular}
+  \end{table}
+  {\scriptsize Diferencia de medias estandarizada entre tratados y controles, antes y después de emparejar. Vecino más cercano 1:3. Controles: docentes que nunca iniciaron, con datos antes del inicio.}
+  \vspace{0.4em}
+  \begin{itemize}\small
+    \item Solo cuatro variables. Contrato, facultad y formaciones previas no se equilibran en esta versión.
+    \item La selección por invitación de la jefatura no se observa en los datos: ningún emparejamiento la corrige.
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Referencias}
+  \small
+  \begin{itemize}
+    \item Angrist, J. D. y Lavy, V. (2001). Does teacher training affect pupil learning? Evidence from matched comparisons in Jerusalem public schools. \emph{Journal of Labor Economics}, 19(2), 343--369.
+    \item Callaway, B. y Sant'Anna, P. H. C. (2021). Difference-in-differences with multiple time periods. \emph{Journal of Econometrics}, 225(2), 200--230.
+    \item Goodman-Bacon, A. (2021). Difference-in-differences with variation in treatment timing. \emph{Journal of Econometrics}, 225(2), 254--277.
+    \item Sun, L. y Abraham, S. (2021). Estimating dynamic treatment effects in event studies with heterogeneous treatment effects. \emph{Journal of Econometrics}, 225(2), 175--199.
+  \end{itemize}
+\end{frame}
+
+\end{document}
