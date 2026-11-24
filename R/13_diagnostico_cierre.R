@@ -1,9 +1,11 @@
 # MODULO 13 — Diagnostico de pretrends por cohorte y resultados relativos
-# Unidad: docente-anio, misma muestra R1 (secciones atribuibles) que 06-12.
+# Unidad: docente-anio, misma muestra que 06-12 (panel_analisis del 02; desde el 23 nov,
+# regla del config). La tabla principal se calcula SIEMPRE con las dos reglas de atribución
+# ('unico' y 'todos'): la del config es la principal y la otra queda como robustez.
 # Tratamiento: primera postulacion/inicio (modulo 08), NO certificacion.
 # No escribe datos individuales en salidas/. NO sustituye una validacion causal.
 message('13: pretrends por cohorte, resultados relativos y cierre de inferencia')
-for (v in c('r','panel_modelo','tratamiento_docente','cfg','reporte')) {
+for (v in c('r','panel_analisis','panel_analisis_todos','tratamiento_docente','cfg','reporte')) {
   if (!exists(v, inherits=TRUE)) stop('13 requiere objeto: ',v)
 }
 for (p in c('did','dplyr','tibble')) {
@@ -74,22 +76,29 @@ reporte(tibble::tibble(
   matriculas_sin_referencia_aprob=sum(seccion_rel13$matriculas_aprob-seccion_rel13$n_aprob_rel)),
   '13_auditoria_referencias.csv')
 
-panel13 <- panel_modelo |>
+construir_panel13 <- function(regla) {
+ base <- panel_analisis_todos
+ if (regla == 'unico') base <- dplyr::filter(base, n_docentes_seccion == 1L)
+ base |>
   dplyr::filter(!is.na(docente_id),is.finite(n_estudiantes),n_estudiantes>0) |>
   dplyr::left_join(dplyr::select(seccion_rel13,periodo_nrc,nota_rel,aprob_rel,
                                 n_nota_rel,n_aprob_rel),by='periodo_nrc') |>
   dplyr::group_by(docente_id,anio=anio_carga) |>
   dplyr::summarise(
-    nota=media13(nota_media,n_estudiantes),
-    aprobacion=media13(tasa_aprobacion,n_estudiantes),
-    nota_rel=media13(nota_rel,n_nota_rel),
-    aprob_rel=media13(aprob_rel,n_aprob_rel),
+    nota=media13(nota_media,n_estudiantes*peso_docente),
+    aprobacion=media13(tasa_aprobacion,n_estudiantes*peso_docente),
+    nota_rel=media13(nota_rel,n_nota_rel*peso_docente),
+    aprob_rel=media13(aprob_rel,n_aprob_rel*peso_docente),
     .groups='drop') |>
   dplyr::left_join(tratamiento_docente |>
     dplyr::select(docente_id,g_anual,rol_analitico),by='docente_id') |>
   dplyr::filter(is.na(rol_analitico)|rol_analitico!='excluir_inicio_desconocido') |>
   dplyr::mutate(g_anual=dplyr::coalesce(as.integer(g_anual),0L)) |>
   dplyr::filter(anio>=2021L,anio<=2026L)
+}
+reglas13 <- c(regla_atribucion, setdiff(c('unico', 'todos'), regla_atribucion))  # principal primero
+paneles13 <- stats::setNames(lapply(reglas13, construir_panel13), reglas13)
+panel13 <- paneles13[[regla_atribucion]]
 if(anyDuplicated(paste(panel13$docente_id,panel13$anio))) stop('13: duplicados docente-anio')
 
 # Evaluacion de cobertura: los resultados relativos pueden tener menos docente-anios.
@@ -125,19 +134,17 @@ estimar13 <- function(d,y,seed=seed13) {
   nt <- dplyr::n_distinct(d$id_did[d$g_estim>0])
   nc <- dplyr::n_distinct(d$id_did[d$g_estim==0])
   if(nt<2 || nc<2) stop('Insuficiente soporte de tratados o controles')
-  set.seed(seed)
-  obj <- did::att_gt(yname=y,tname='anio',idname='id_did',gname='g_estim',
-    data=as.data.frame(d),panel=TRUE,allow_unbalanced_panel=TRUE,
-    control_group='notyettreated',anticipation=0,est_method='reg',
-    bstrap=TRUE,biters=iter13,clustervars='id_did',
-    alp=alpha13,cband=TRUE,print_details=FALSE)
+  # Semilla y opciones comunes (00_utilidades.R, 23 nov).
+  cfg_s <- cfg; cfg_s$did$semilla <- seed
+  obj <- did_estimar(d, y, 'g_estim', cfg_s)
   list(obj=obj,nt=nt,nc=nc)
 }
 
 estados13 <- list(); resultados13 <- list(); pre13 <- list(); celdas13 <- list()
 # Outcome absoluto vs relativo, cortes 2025/2026, especificacion con todas las cohortes.
-for(corte in c(2025L,2026L)) for(y in c('nota','aprobacion','nota_rel','aprob_rel')) {
-  escenario <- paste0('hasta_',corte)
+for(regla13 in reglas13) for(corte in c(2025L,2026L)) for(y in c('nota','aprobacion','nota_rel','aprob_rel')) {
+  panel13 <- paneles13[[regla13]]
+  escenario <- paste0('hasta_',corte, if (regla13 != regla_atribucion) paste0('_regla_', regla13) else '')
   prep <- armar13(y,corte)
   d <- prep$data
   fit <- tryCatch(estimar13(d,y),error=function(e)e)
@@ -154,7 +161,7 @@ for(corte in c(2025L,2026L)) for(y in c('nota','aprobacion','nota_rel','aprob_re
     ee=as.numeric(obj$se)) |>
     dplyr::mutate(estimable=is.finite(att))
   celdas13[[length(celdas13)+1L]] <- gr
-  ag <- tryCatch(did::aggte(obj,type='simple',na.rm=TRUE,alp=alpha13),error=function(e)e)
+  ag <- tryCatch(did_agregar(obj,'simple',cfg),error=function(e)e)
   if(inherits(ag,'error')) {
     estados13[[length(estados13)+1L]] <- tibble::tibble(
       bloque='relativos',escenario=escenario,resultado=y,estado='ERROR_AGGTE',
@@ -170,7 +177,7 @@ for(corte in c(2025L,2026L)) for(y in c('nota','aprobacion','nota_rel','aprob_re
   }
   wald <- num13(obj$Wpval)
   resultados13[[length(resultados13)+1L]] <- tibble::tibble(
-    escenario=escenario,corte=corte,resultado=y,
+    escenario=escenario,regla_atribucion=regla13,corte=corte,resultado=y,
     tipo_escala=if(y %in% c('aprobacion','aprob_rel'))'proporcion' else 'nota',
     att=att,ee=ee,ic93_inf=att-z13*ee,ic93_sup=att+z13*ee,
     p_normal_aprox=2*stats::pnorm(-abs(att/ee)),
@@ -191,6 +198,7 @@ for(corte in c(2025L,2026L)) for(y in c('nota','aprobacion','nota_rel','aprob_re
     bloque='relativos',escenario=escenario,resultado=y,estado='OK',detalle='')
 }
 
+panel13 <- paneles13[[regla_atribucion]]  # el resto del módulo usa la regla principal
 # 3. Pretrends por cohorte: estimaciones separadas contra controles nunca iniciados.
 # Es deliberadamente un diagnostico DIFERENTE a las tendencias conjuntas de 12.
 # Solo 2023 y 2024, sin incluir docentes de la cohorte 2025 como controles.

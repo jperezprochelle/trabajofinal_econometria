@@ -9,6 +9,8 @@ archivos:
   postulantes: "datos/originales/Postulantes Diplomado.xlsx"
   # Características de los docentes VIGENTES hoy (foto actual, no histórica)
   info_docente: "datos/originales/Información del Docente.xlsx"
+  # Equivalencias de asignaturas de la modernización curricular 2026 (Ricardo, 23 nov). Solo la usa el 14.
+  equivalencias_2026: "datos/originales/Equivalencias 2026.xlsx"
 analisis:
   nombre_programa: "DIPLOMADO EN DOCENCIA PARA LA EDUCACION SUPERIOR"
   anio_inicio: 2021
@@ -19,6 +21,11 @@ analisis:
   excluir_posgrados: true
   criterio_docencia: "unico_docente"  # unico_docente; todos_descriptivo
   minimo_estudiantes_seccion: 5
+  # Módulos 06 a 13. "unico" = solo secciones con un docente (principal desde el 24 nov: sin
+  # saber quién pone la nota, repartir diluye el efecto y contamina a los controles que comparten
+  # sección con tratados). "todos" = todas las secciones repartidas por igual entre sus docentes
+  # (indicación de Ricardo, 23 nov); el 13 la reporta siempre al lado como robustez.
+  regla_atribucion: "unico"
   preferir_hoja_mas_reciente: true
   generar_exportaciones_detalle: true
 analisis_anual:
@@ -37,11 +44,11 @@ did:
 # Script 07: replicación de Angrist y Lavy (DiD con controles emparejados por cohorte). Ver encabezado del 07.
 emparejamiento:
   activar: true
-  # Año de inicio de las versiones que no están en la base de postulantes (la que certificó en 2023 empezó en 2022: Reunión)
+  # Año de inicio de las versiones que no están en la base de postulantes (solo lo usa el 07 antiguo)
+  # 23 nov: la versión que certificó en 2023 empezó el 22 may 2023 (Camila). Antes se suponía 2022.
   inicio_supuesto:
-    "2023": 2022
-  # Mes de inicio supuesto cuando no se conoce (solo afecta al panel semestral): octubre, como las demás versiones
-  mes_inicio_supuesto: 10
+    "2023": 2023
+  mes_inicio_supuesto: 5
   ratio: 3              # controles por tratado (principal)
   ratio_robustez: 5
   distancia: "robust_mahalanobis"
@@ -54,3 +61,11 @@ emparejamiento:
   semilla: 20261121
 inferencia:
   alpha: 0.07
+# Tratamiento (módulo 08). Versiones del diplomado que no están en la base de postulantes:
+# sus certificados reciben la fecha de inicio de la versión. Nunca reemplaza una fecha de postulantes.
+tratamiento:
+  versiones_sin_postulacion:
+    - anio_certificado: 2023
+      fecha_inicio: "2023-05-22"
+      fecha_fin: "2023-11-25"
+      fuente: "Camila, reunión 23 nov 2026"

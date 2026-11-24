@@ -58,3 +58,41 @@ fecha_excel <- function(x) {
   if (inherits(x, c("Date", "POSIXt"))) return(as.Date(x))
   as.Date(suppressWarnings(as.numeric(x)), origin = "1899-12-30")
 }
+
+# ---------------------------------------------------------------------------
+# Estimación DiD común para los módulos 06 a 13 (acordado el 23 nov).
+# Motivo: el mismo ATT salía con errores estándar distintos según el módulo, porque
+# cada uno fijaba la semilla en un lugar distinto (o una sola vez al inicio) y usaba
+# opciones distintas (cband, alp). Ahora todos llaman a estas funciones: misma
+# configuración y semilla reiniciada justo antes de cada att_gt y de cada aggte.
+# Con los mismos datos, el mismo ATT tiene el mismo error estándar en todos los módulos.
+# ---------------------------------------------------------------------------
+parametros_did <- function(cfg) {
+  alpha <- if (is.null(cfg$inferencia$alpha)) 0.07 else as.numeric(cfg$inferencia$alpha)
+  iter <- if (is.null(cfg$did$bootstrap_iter)) 999L else as.integer(cfg$did$bootstrap_iter)
+  semilla <- if (is.null(cfg$did$semilla)) 20261119L else as.integer(cfg$did$semilla)
+  stopifnot(length(alpha) == 1L, is.finite(alpha), alpha > 0, alpha < 1,
+            length(iter) == 1L, is.finite(iter), iter >= 100L, length(semilla) == 1L, is.finite(semilla))
+  list(alpha = alpha, iter = iter, semilla = semilla, z = stats::qnorm(1 - alpha / 2))
+}
+# d: panel docente-año con columnas anio, id_did y la columna de cohorte gname (0 = sin inicio).
+did_estimar <- function(d, y, gname, cfg, control = "notyettreated") {
+  if (!requireNamespace("did", quietly = TRUE)) stop("Instalar did: install.packages('did')")
+  p <- parametros_did(cfg)
+  set.seed(p$semilla)
+  did::att_gt(yname = y, tname = "anio", idname = "id_did", gname = gname,
+              data = as.data.frame(d), panel = TRUE, allow_unbalanced_panel = TRUE,
+              control_group = control, anticipation = 0, est_method = "reg",
+              bstrap = TRUE, biters = p$iter, clustervars = "id_did",
+              alp = p$alpha, cband = TRUE, print_details = FALSE)
+}
+did_agregar <- function(obj, type, cfg, ...) {
+  p <- parametros_did(cfg)
+  set.seed(p$semilla)
+  did::aggte(obj, type = type, na.rm = TRUE, alp = p$alpha, ...)
+}
+# Promedio ponderado que ignora valores no finitos (lo usaban 06 a 13 con nombres distintos).
+media_ponderada <- function(x, w) {
+  ok <- is.finite(x) & is.finite(w) & w > 0
+  if (any(ok)) sum(x[ok] * w[ok]) / sum(w[ok]) else NA_real_
+}

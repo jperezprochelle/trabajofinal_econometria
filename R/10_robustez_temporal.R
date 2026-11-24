@@ -5,7 +5,7 @@
 # Excluir certificados con inicio desconocido (no convertir en controles).
 # Los resultados de esta ejecucion NO sustituyen los diagnosticos 06 y 09.
 message('10: robustez temporal, corte 2025 y exposicion posterior al inicio')
-stopifnot(exists('panel_modelo'), exists('tratamiento_docente'),
+stopifnot(exists('panel_analisis'), exists('tratamiento_docente'),
           exists('cfg'), exists('reporte'), exists('assert_unica'))
 if (!requireNamespace('did', quietly=TRUE)) stop("Instalar 'did': install.packages('did')")
 
@@ -23,11 +23,12 @@ media10 <- function(x,w) {
 }
 
 # Construir el MISMO panel anual de 06, antes del filtro de elegibilidad.
-panel10 <- panel_modelo |>
+# Desde el 23 nov: panel_analisis (02), con reparto 1/n° de docentes por sección.
+panel10 <- panel_analisis |>
   dplyr::filter(!is.na(docente_id),is.finite(n_estudiantes),n_estudiantes>0) |>
   dplyr::group_by(docente_id, anio=anio_carga) |>
-  dplyr::summarise(nota=media10(nota_media,n_estudiantes),
-                   aprobacion=media10(tasa_aprobacion,n_estudiantes),
+  dplyr::summarise(nota=media10(nota_media,n_estudiantes*peso_docente),
+                   aprobacion=media10(tasa_aprobacion,n_estudiantes*peso_docente),
                    .groups='drop') |>
   dplyr::left_join(tratamiento_docente |>
     dplyr::select(docente_id,g_anual,rol_analitico),by='docente_id') |>
@@ -73,12 +74,8 @@ for (corte in c(2026L,2025L)) {
     # sin quitar ese ano de los datos para estimar la base.
     mp <- tryCatch({
       if (n_trat<2L) stop('Menos de dos docentes tratados elegibles')
-      set.seed(semilla10)
-      did::att_gt(yname=y,tname='anio',idname='id_did',gname='g_analisis',
-                  data=as.data.frame(d),panel=TRUE,allow_unbalanced_panel=TRUE,
-                  control_group='notyettreated',anticipation=0,
-                  est_method='reg',bstrap=TRUE,biters=iter10,
-                  clustervars='id_did',alp=alpha10,print_details=FALSE)
+      # Semilla y opciones comunes (00_utilidades.R, 23 nov).
+      did_estimar(d, y, 'g_analisis', cfg)
     },error=function(e)e)
     if (inherits(mp,'error')) {
       estado10[[length(estado10)+1L]] <- tibble::tibble(
@@ -97,9 +94,9 @@ for (corte in c(2026L,2025L)) {
     # efecto promedio solo a partir del siguiente anio.
     calculos <- list(
       list(nombre='simple_desde_inicio',
-           funcion=function()did::aggte(mp,type='simple',na.rm=TRUE,alp=alpha10)),
+           funcion=function()did_agregar(mp,'simple',cfg)),
       list(nombre='dinamico_desde_anio_siguiente',
-           funcion=function()did::aggte(mp,type='dynamic',min_e=1L,na.rm=TRUE,alp=alpha10))
+           funcion=function()did_agregar(mp,'dynamic',cfg,min_e=1L))
     )
     for (a in calculos) {
       obj <- tryCatch(a$funcion(),error=function(e)e)

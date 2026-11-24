@@ -165,3 +165,71 @@ Replica el diseño de Angrist y Lavy (2001): DiD con controles emparejados. Plan
 - Se corrió en una copia: 01, 02 y 06 sin estimar (los conteos de `did_conteo_controles.csv` coinciden con los de la carpeta), luego el 07 y después `main.R` completo con `did$estimar: false`. La estimación con `did` no se pudo correr en la copia (el paquete no estaba disponible); el 07 no depende de ella.
 - El DiD de fixest coincide con la diferencia de diferencias calculada a mano en un subpanel balanceado (cohorte 2024).
 - Balance (principal): quedan equilibradas las variables con caliper y el régimen (|DME| ≤ 0,07). Quedan desequilibradas haber hecho formaciones previas (DME 0,67 a 0,81: los tratados hacen más formaciones), la facultad y el tamaño de la carga. Por eso existe la especificación `exacto_ampliado`.
+
+---
+
+## Cambios del 22 de noviembre (Josefina) — registro posterior
+
+Este archivo no registró el trabajo del 22 de noviembre. En resumen (detalle en la sección 11 de `Referencia_Diplomado_y_Bases_v4.docx` y en `README/`): tratamiento desde la primera postulación a una versión iniciada (08), DiD por cohorte de inicio (`06_did_inicio_unificado.R`), emparejamiento por cohorte de inicio (`07_matching_inicio_unificado.R`), auditoría de soporte (09), robustez temporal (10), consolidación (11), validación de identificación (12) y resultados relativos al programa (13). `06_did_anual.R` y `07_emparejamiento.R` quedaron como históricos y `main.R` ya no los corre.
+
+---
+
+## Cambios del 23 de noviembre (después de la reunión con la institución)
+
+### 1. Fechas de la versión certificada en 2023
+- **Fuente:** Camila, reunión del 23 nov: la versión que certificó en 2023 fue del 22 de mayo al 25 de noviembre de 2023. Corrige el supuesto anterior (inicio en 2022).
+- **`config.yml`:** bloque nuevo `tratamiento: versiones_sin_postulacion` con esas fechas. En `emparejamiento` (solo lo usa el 07 antiguo), `inicio_supuesto` pasa de 2022 a 2023 y `mes_inicio_supuesto` de 10 a 5.
+- **`08_auditoria_cohortes.R`:** los certificados de 2023 sin postulación reciben esa fecha de inicio (nunca reemplaza una fecha de la base de postulantes). Nuevo rol `tratado_desde_fecha_de_version` y trayectoria `certificado_con_fecha_de_version_institucional`. `08_auditoria_control_calidad.csv` agrega `con_inicio_por_fecha_de_version` y `postulantes_unicos` ahora cuenta solo a quienes están en la base de postulantes.
+- **Resultado:** los 15 certificados de 2023 dejan de estar excluidos y pasan a la cohorte de inicio 2023. Ya no queda ningún certificado con inicio desconocido.
+
+### 2. Secciones con varios docentes: reparto por igual
+- **Fuente:** Ricardo, reunión del 23 nov: que la responsabilidad sume más de 100 % no significa nada; el resultado se reparte por igual entre los docentes de la sección.
+- **`02_construir_panel.R`:** nuevo objeto `panel_analisis`: todas las secciones con resultados, 5 o más estudiantes y la misma asignatura en carga y rendimiento, con `peso_docente = 1 / n° de docentes`. `panel_modelo` no cambia (lo usan 03, 04 y 05). Nueva salida `02_panel_analisis_resumen.csv`.
+- **`config.yml`:** `analisis: regla_atribucion: "todos"` (principal). Con `"unico"` se vuelve a la muestra anterior (solo secciones con un docente).
+- **08, 06_inicio, 07_matching, 09 a 13:** usan `panel_analisis` y ponderan por estudiantes × `peso_docente`.
+- **13:** la tabla principal (`13_resultados_absolutos_relativos.csv`) se repite con la regla `"unico"` como robustez (columna `regla_atribucion`; escenarios `hasta_2025_regla_unico` y `hasta_2026_regla_unico`).
+
+### 3. Estimación común (errores estándar iguales entre módulos)
+- **Problema:** el mismo ATT salía con errores estándar distintos en 06, 10, 12 y 13, porque cada módulo fijaba la semilla en otro momento y usaba opciones distintas (`cband`, `alp`).
+- **`00_utilidades.R`:** nuevas funciones `parametros_did()`, `did_estimar()`, `did_agregar()` y `media_ponderada()`. Fijan la misma configuración (`est_method = "reg"`, `anticipation = 0`, `cband = TRUE`, bootstrap de `did$bootstrap_iter`, `alp = inferencia$alpha`) y reinician la semilla justo antes de cada `att_gt` y cada `aggte`.
+- **06_inicio, 10, 11, 12 y 13:** llaman a esas funciones en vez de `did::att_gt` y `did::aggte` directo.
+- **Verificado:** `11_reconciliacion_06_10.csv` da `COINCIDEN` en nota y aprobación, y `13_reconciliacion_inferencia.csv` da `inferencia_consistente = TRUE` en ambas.
+- **Ojo:** el error estándar sigue siendo una estimación por bootstrap. Con otra semilla o otra versión del paquete `did` puede cambiar en torno a un 5 a 10 %. Ahora es consistente entre módulos, pero un resultado justo en el borde del 7 % sigue siendo frágil.
+
+### 4. Tabla de equivalencias 2026
+- **Fuente:** Ricardo, 23 nov. Archivo `datos/originales/Equivalencias 2026.xlsx`; ruta en `config.yml` (`archivos: equivalencias_2026`).
+- **Nuevo `R/14_equivalencias_2026.R`** (agregado al final de `main.R`). No cambia ningún resultado de 06 a 13. Genera `14_auditoria_equivalencias.csv` (cobertura frente a la carga 2026) y `14_continuidad_asignaturas.csv` (si los docentes que iniciaron siguen dictando asignaturas que ya dictaban, con y sin traducir los códigos 2026).
+- **Pendiente:** la columna `CRITICA_2026` (101 filas con 1) no tiene diccionario; no se usa.
+
+### Cómo se verificó
+- Copia completa del proyecto. Prueba de regresión con `regla_atribucion = "unico"` y sin las fechas nuevas: las tablas del 08 son idénticas a las de la carpeta (salvo la columna nueva), y los ATT de 06, 07, 10 y 13 coinciden con los de la carpeta hasta 1e-13. Solo cambian los errores estándar, por el cambio 3.
+- Luego `main.R` completo con la configuración nueva: todos los módulos terminan sin errores (did 2.5.1, MatchIt 4.5.5, fixest 0.14.2; las versiones de la carpeta pueden ser otras).
+
+### Lo que cambia en los resultados (corrida de prueba; usar la corrida definitiva de la carpeta)
+- Tratados en el DiD (con datos antes y desde el inicio): de 35 a **76** (35, 13, 10 y 18 en las cohortes de inicio 2023 a 2026). Controles sin inicio: de 1.351 a 2.694.
+- Efectos hasta 2026 (todos no significativos al 7 %): nota −0,10 (EE 0,070), aprobación −1,0 pp (1,4), **nota relativa +0,03 (0,066), aprobación relativa −0,5 pp (1,1)**.
+- **Tendencias previas:** con la regla nueva, la prueba conjunta rechaza en las cuatro medidas (p < 0,001 hasta 2026). Con la regla `"unico"` no rechaza hasta 2026. Revisar antes de interpretar: es el cambio más importante de esta corrida.
+- **Evento +3:** nota −0,29 (banda simultánea del 93 % de −0,52 a −0,06), con 22 docentes de la cohorte 2023 observados en 2026; aprobación −2,5 pp (banda de −8,0 a +2,9).
+
+### Corrida de la carpeta (24 nov)
+- `main.R` completo sin errores. Los ATT coinciden con los de la corrida de prueba; los errores estándar cambian levemente (otras versiones de paquetes).
+- `11_reconciliacion_06_10.csv`: `COINCIDEN` en nota y aprobación. `13_reconciliacion_inferencia.csv`: consistente en ambas.
+- Efectos hasta 2026 (no significativos al 7 %): nota −0,10 (EE 0,071), aprobación −1,0 pp (1,3), nota relativa +0,03 (0,061), aprobación relativa −0,5 pp (1,1).
+- Tendencias previas: la prueba conjunta rechaza en nota (p = 0,0001) y aprobación (p = 0,0008), también sin la cohorte 2025.
+- Emparejamiento (07 nuevo): la cohorte 2024 da +0,23 en nota, justo distinto de cero al 7 % (IC 93 % de 0,0003 a 0,46; 12 tratados). En la corrida de prueba daba +0,22 y no cruzaba el umbral. No es robusto.
+- `CRITICA_2026` = asignatura crítica (Gabriela, 24 nov). El 14 la cuenta y no la usa.
+
+---
+
+## Cambio del 24 de noviembre: regla principal = secciones con un solo docente
+
+- **Decisión (Gabriela, 24 nov):** la regla principal de atribución vuelve a ser "unico" (solo secciones con un docente). La regla de reparto por igual ("todos"), que indicó Ricardo el 23 nov, queda como robustez en el informe. En el trabajo para la institución se reportan ambas, lado a lado.
+- **Motivo (definido por la atribución, no por los resultados):** cuando una sección tiene varios docentes no sabemos quién pone la nota ni quién diseña la evaluación. Repartir el resultado diluye el posible efecto del docente tratado y contamina a los controles que comparten sección con tratados; ambos sesgos empujan la estimación hacia cero. Con un solo docente, la nota se atribuye a quien la pone. Costo: menos tratados (40 contra 76 hasta 2026) y resultados válidos para ese tipo de secciones.
+- **`config.yml`:** `analisis: regla_atribucion: "unico"`.
+- **`02_construir_panel.R`:** nuevo objeto `panel_analisis_todos` (todas las secciones, siempre). `panel_analisis` es el de la regla del config.
+- **`08_auditoria_cohortes.R`:** `tratamiento_docente` se arma con `panel_analisis_todos`. **Corrección:** si se armaba con `panel_analisis` y la regla "unico", un docente del diplomado que solo dicta secciones compartidas quedaba sin tratamiento y, en la comparación con la regla "todos" del 13, pasaba por error al grupo de control. Lo detecté al probar este cambio; con la regla "todos" (corridas del 23 y 24 nov) no ocurría.
+- **`13_diagnostico_cierre.R`:** calcula siempre las dos reglas (la del config primero). Las filas de la otra regla llevan el sufijo `_regla_todos` o `_regla_unico` en `escenario`.
+- **Verificado (prueba en una copia):** `main.R` completo sin errores; reconciliación del 11 y del 13 consistente. Las filas con la regla "todos" reproducen exactamente la corrida del 24 nov, y las filas con "unico" son iguales a las de la robustez de esa corrida.
+- **Resultados con la regla principal, hasta 2026 (prueba):** 40 tratados y 1.351 controles. Nota −0,10 (EE 0,078), aprobación −2,1 pp (1,6), nota relativa +0,02 (0,071), aprobación relativa −1,2 pp (1,6); ninguno distinto de cero al 7 %. Tendencias previas: no se rechaza hasta 2026 (nota p = 0,070; aprobación p = 0,26; nota relativa p = 0,11), sí hasta 2025 en nota (p = 0,055) y nota relativa (p = 0,038), y sin la cohorte 2025 en nota (p = 0,021).
+- **Hay que volver a correr `main.R`** para que todos los módulos queden con la regla principal.
+- **Corrida de la carpeta (24 nov, con la regla principal):** sin errores. Los ATT coinciden con la prueba; los errores estándar cambian levemente (otras versiones de paquetes; nota EE 0,079). Las filas `_regla_todos` reproducen exactamente la corrida anterior de la carpeta. Reconciliación del 11 y del 13 consistente.

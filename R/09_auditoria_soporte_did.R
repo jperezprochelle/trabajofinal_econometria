@@ -4,7 +4,7 @@
 # Respeta la regla institucional: primera postulacion a version iniciada = inicio.
 # No exporta identificadores docentes ni datos personales.
 message('09: Auditoria de soporte del DiD y del evento +3')
-stopifnot(exists('panel_modelo'), exists('tratamiento_docente'), exists('cfg'), exists('reporte'))
+stopifnot(exists('panel_analisis'), exists('tratamiento_docente'), exists('cfg'), exists('reporte'))
 if (!requireNamespace('dplyr', quietly=TRUE)) stop('Instalar dplyr')
 if (!requireNamespace('tibble', quietly=TRUE)) stop('Instalar tibble')
 
@@ -16,11 +16,12 @@ media09 <- function(x,w) {
 
 # Replica la base docente-anio y reglas de elegibilidad del 06,
 # pero conserva a TODOS los tratados para explicar la perdida de muestra.
-base09 <- panel_modelo |>
+# Desde el 23 nov: panel_analisis (02), con reparto 1/n° de docentes por sección.
+base09 <- panel_analisis |>
   dplyr::filter(!is.na(docente_id), is.finite(n_estudiantes), n_estudiantes>0) |>
   dplyr::group_by(docente_id, anio=anio_carga) |>
-  dplyr::summarise(nota=media09(nota_media,n_estudiantes),
-                   aprobacion=media09(tasa_aprobacion,n_estudiantes),
+  dplyr::summarise(nota=media09(nota_media,n_estudiantes*peso_docente),
+                   aprobacion=media09(tasa_aprobacion,n_estudiantes*peso_docente),
                    n_secciones=dplyr::n(), .groups='drop') |>
   dplyr::left_join(tratamiento_docente |>
     dplyr::select(docente_id,g_anual,rol_analitico),by='docente_id') |>

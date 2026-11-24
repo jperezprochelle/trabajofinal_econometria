@@ -83,3 +83,30 @@ reporte(panel_modelo |> dplyr::group_by(anio_carga) |> dplyr::summarise(
  n_estudiantes=sum(n_estudiantes, na.rm=TRUE),
  .groups="drop"),
  "descripcion_anual.csv")
+
+# Panel de análisis de los módulos 06 a 13 (config: analisis$regla_atribucion).
+# Regla "unico" (principal desde el 24 nov): solo secciones con un docente; es exactamente
+# panel_modelo. Sin saber qué docente pone la nota o diseña la evaluación, repartir una
+# sección compartida diluye el efecto del tratado y contamina a los controles que la comparten.
+# Regla "todos" (robustez; indicación de Ricardo, 23 nov: la responsabilidad sobre 100 % no
+# significa nada y el resultado se reparte por igual): todas las secciones con resultados,
+# 5 o más estudiantes y la misma asignatura en carga y rendimiento, con
+# peso_docente = 1 / n° de docentes.
+# panel_modelo no cambia: lo siguen usando 03, 04 y 05.
+regla_atribucion <- if (is.null(cfg$analisis$regla_atribucion)) "todos" else cfg$analisis$regla_atribucion
+if (!regla_atribucion %in% c("todos", "unico")) stop("analisis$regla_atribucion debe ser 'todos' o 'unico'")
+# panel_analisis_todos guarda siempre todas las secciones (lo usa el 13 para comparar reglas).
+panel_analisis_todos <- panel |>
+  dplyr::filter(!is.na(n_estudiantes), asignatura_coincide %in% TRUE,
+                n_estudiantes >= as.integer(cfg$analisis$minimo_estudiantes_seccion),
+                anio_carga >= cfg$analisis$anio_inicio, anio_carga <= cfg$analisis$anio_fin) |>
+  dplyr::mutate(peso_docente = 1 / n_docentes_seccion)
+panel_analisis <- if (regla_atribucion == "unico") dplyr::filter(panel_analisis_todos, n_docentes_seccion == 1L) else panel_analisis_todos
+reporte(panel_analisis |>
+  dplyr::group_by(anio_carga) |>
+  dplyr::summarise(regla = regla_atribucion, pares_seccion_docente = dplyr::n(),
+                   secciones = dplyr::n_distinct(periodo_nrc), docentes = dplyr::n_distinct(docente_id),
+                   pares_en_secciones_compartidas = sum(n_docentes_seccion > 1L), .groups = "drop"),
+  "02_panel_analisis_resumen.csv")
+message("02: panel de análisis con regla '", regla_atribucion, "': ", nrow(panel_analisis),
+        " pares sección-docente (panel_modelo, un docente: ", nrow(panel_modelo), ")")

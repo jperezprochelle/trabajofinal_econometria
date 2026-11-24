@@ -5,7 +5,7 @@
 # ATENCION: año de inicio puede ser exposición parcial; no implica efecto de certificación.
 # Controles de inicio desconocido excluidos de forma permanente.
 message("06 NUEVO: DiD por cohorte de inicio unificada")
-stopifnot(exists("tratamiento_docente"), exists("panel_modelo"), exists("cfg"))
+stopifnot(exists("tratamiento_docente"), exists("panel_analisis"), exists("cfg"))
 
 # Protege resultados intermedios; nada con identificadores en salidas/.
 media_segura_06 <- function(x, w) {
@@ -13,12 +13,14 @@ media_segura_06 <- function(x, w) {
   if (any(ok)) sum(x[ok] * w[ok]) / sum(w[ok]) else NA_real_
 }
 
-base_06 <- panel_modelo |>
+# Desde el 23 nov: panel_analisis (02). Cada sección pesa por sus estudiantes y, si la
+# comparten varios docentes, se reparte por igual entre ellos (peso_docente = 1/n°).
+base_06 <- panel_analisis |>
   dplyr::filter(!is.na(docente_id), is.finite(n_estudiantes), n_estudiantes > 0) |>
   dplyr::group_by(docente_id, anio = anio_carga) |>
   dplyr::summarise(
-    nota = media_segura_06(nota_media, n_estudiantes),
-    aprobacion = media_segura_06(tasa_aprobacion, n_estudiantes),
+    nota = media_segura_06(nota_media, n_estudiantes * peso_docente),
+    aprobacion = media_segura_06(tasa_aprobacion, n_estudiantes * peso_docente),
     n_estudiantes = sum(n_estudiantes),
     n_secciones = dplyr::n(), .groups = "drop") |>
   dplyr::left_join(tratamiento_docente |>
@@ -75,7 +77,8 @@ confianza_06 <- 1 - alpha_06
 z_critico_06 <- stats::qnorm(1-alpha_06/2)
 message(sprintf("06: alpha=%.3f; IC bilateral=%.1f%%", alpha_06, 100*confianza_06))
 iter_06 <- if (is.null(cfg$did$bootstrap_iter)) 199L else as.integer(cfg$did$bootstrap_iter)
-set.seed(if (is.null(cfg$did$semilla)) 20261122L else as.integer(cfg$did$semilla))
+# La semilla se fija dentro de did_estimar() y did_agregar() (00_utilidades.R), justo antes
+# de cada estimación, para que el mismo ATT tenga el mismo error estándar en 06 a 13.
 resultados_06 <- list(); eventos_06 <- list(); estado_06 <- list(); celdas_06 <- list()
 for (e in especificaciones_06) {
   d0 <- base_06
@@ -92,12 +95,7 @@ for (e in especificaciones_06) {
     obj <- tryCatch({
       if (n_t < 2L) stop("Menos de 2 tratados")
       if (e$control == "nevertreated" && n_c < 2L) stop("Sin controles nunca iniciados")
-      did::att_gt(
-        yname=y, tname="anio", idname="id_did", gname="g_anual",
-        data=as.data.frame(d), panel=TRUE, allow_unbalanced_panel=TRUE,
-        control_group=e$control, anticipation=0,
-        est_method="reg", bstrap=TRUE, biters=iter_06,
-        clustervars="id_did", print_details=FALSE)
+      did_estimar(d, y, "g_anual", cfg, control = e$control)
     }, error=function(er) er)
     if (inherits(obj,"error")) {
       estado_06[[length(estado_06)+1L]] <- tibble::tibble(
@@ -129,7 +127,7 @@ for (e in especificaciones_06) {
         celdas_faltantes=n_faltantes)
       next
     }
-    ag <- tryCatch(did::aggte(obj,type="simple",na.rm=TRUE),error=function(er) er)
+    ag <- tryCatch(did_agregar(obj, "simple", cfg),error=function(er) er)
     if (inherits(ag,"error") || !is.finite(ag$overall.att) ||
         !is.finite(ag$overall.se)) {
       detalle <- if (inherits(ag,"error")) conditionMessage(ag) else
@@ -155,7 +153,7 @@ for (e in especificaciones_06) {
         celdas_validas=n_validas,celdas_faltantes=n_faltantes)
     }
     # El event study es independiente del ATT promedio.
-    dyn <- tryCatch(did::aggte(obj,type="dynamic",na.rm=TRUE),error=function(er) er)
+    dyn <- tryCatch(did_agregar(obj, "dynamic", cfg),error=function(er) er)
     if (inherits(dyn,"error")) {
       estado_06[[length(estado_06)+1L]] <- tibble::tibble(
         especificacion=e$nombre,resultado=y,estado="FALLO_EVENT_STUDY",

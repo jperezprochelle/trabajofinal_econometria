@@ -6,7 +6,7 @@
 # Exportaciones con ID docente se almacenan exclusivamente en datos/procesados/.
 
 message('08: Auditoría de cohortes (primera postulación = inicio)')
-stopifnot(exists('cfg'), exists('panel_modelo'), exists('diploma_cert'))
+stopifnot(exists('cfg'), exists('panel_analisis'), exists('panel_analisis_todos'), exists('diploma_cert'))
 
 ruta_post_08 <- cfg$archivos$postulantes
 if (is.null(ruta_post_08) || !file.exists(ruta_post_08)) {
@@ -123,6 +123,33 @@ universo08 <- dplyr::full_join(
                   certificado & !is.na(mes_certificado),
                   sprintf('%04d-%02d-01', anio_certificado, mes_certificado),NA_character_)))
 
+# Versiones sin fechas en la base de postulantes (23 nov). La versión que certificó en 2023
+# no está en la base de postulantes; Camila informó sus fechas en la reunión del 23 nov
+# (22 may 2023 a 25 nov 2023). Se aplican SOLO a certificados de ese año sin postulación
+# registrada; nunca reemplazan una fecha de la base de postulantes.
+versiones_sin_post08 <- cfg$tratamiento$versiones_sin_postulacion
+if (length(versiones_sin_post08)) {
+  for (v08 in versiones_sin_post08) {
+    ini08 <- as.Date(v08$fecha_inicio); fin08 <- as.Date(v08$fecha_fin)
+    if (is.na(ini08) || is.na(fin08) || ini08 > fin08) stop('Fechas inválidas en tratamiento$versiones_sin_postulacion')
+    if (as.integer(format(fin08, '%Y')) != as.integer(v08$anio_certificado))
+      stop('La versión sin postulación termina en un año distinto de su año de certificado: revisar config')
+    m08 <- universo08$certificado & !universo08$tiene_inicio &
+      universo08$anio_certificado == as.integer(v08$anio_certificado)
+    universo08 <- universo08 |>
+      dplyr::mutate(
+        fecha_inicio = dplyr::if_else(m08, ini08, fecha_inicio),
+        fecha_fin_version_institucion = dplyr::if_else(m08, fin08, as.Date(NA)),
+        tiene_inicio = tiene_inicio | m08,
+        anio_inicio = as.integer(format(fecha_inicio, '%Y')),
+        mes_inicio = as.integer(format(fecha_inicio, '%m')),
+        trayectoria = dplyr::if_else(m08, 'certificado_con_fecha_de_version_institucional', trayectoria),
+        fuente_fecha_inicio = dplyr::if_else(m08, paste0('fecha_version_institucion: ', v08$fuente), fuente_fecha_inicio))
+    message('08: ', sum(m08), ' certificados de ', v08$anio_certificado,
+            ' reciben la fecha de inicio de su versión (', v08$fecha_inicio, ')')
+  }
+}
+
 # Auditoría de inconsistencias potenciales (sin corregir automáticamente).
 universo08 <- universo08 |>
   dplyr::mutate(alerta_cert_antes_inicio = certificado & tiene_inicio &
@@ -131,13 +158,14 @@ universo08 <- universo08 |>
                   anio_certificado == anio_inicio)
 
 # Cobertura desde el panel previamente depurado: observaciones docentes-año.
-cob_doc08 <- panel_modelo |>
+# Desde el 23 nov: panel_analisis (02), con reparto 1/n° de docentes por sección.
+cob_doc08 <- panel_analisis |>
   dplyr::filter(!is.na(docente_id), !is.na(anio_carga)) |>
   dplyr::group_by(docente_id, anio = anio_carga) |>
   dplyr::summarise(n_secciones = dplyr::n(),
                    n_estudiantes_matricula = sum(n_estudiantes,na.rm=TRUE),
-                   nota_media = stats::weighted.mean(nota_media,n_estudiantes,na.rm=TRUE),
-                   tasa_aprobacion = stats::weighted.mean(tasa_aprobacion,n_estudiantes,na.rm=TRUE),
+                   nota_media = media_ponderada(nota_media, n_estudiantes * peso_docente),
+                   tasa_aprobacion = media_ponderada(tasa_aprobacion, n_estudiantes * peso_docente),
                    .groups='drop')
 
 cobertura08 <- cob_doc08 |>
@@ -167,8 +195,9 @@ universo08 <- universo08 |>
 reporte(universo08 |>
   dplyr::count(trayectoria,name='docentes'), '08_auditoria_trayectorias_resumen.csv')
 reporte(universo08 |>
-  dplyr::summarise(postulantes_unicos=sum(tiene_inicio|postulo_futuro),
+  dplyr::summarise(postulantes_unicos=sum(docente_id %in% post08$docente_id),
                    con_inicio=sum(tiene_inicio),
+                   con_inicio_por_fecha_de_version=sum(trayectoria=='certificado_con_fecha_de_version_institucional'),
                    certificados=sum(certificado),
                    certificados_con_inicio=sum(certificado & tiene_inicio),
                    sin_certificacion_pese_a_inicio=sum(tiene_inicio & !certificado),
@@ -239,7 +268,11 @@ message('08 completo: ',sum(universo08$tiene_inicio),' inicios observados; ',
 # Fecha no observada en docentes certificados => se excluyen de
 # tratados Y controles, no se reclasifican como nunca tratados.
 # ==============================================================
-tratamiento_docente <- panel_modelo |>
+# El universo de docentes no depende de la regla de atribución: se toma de todas las secciones
+# (panel_analisis_todos, 02). Si se tomara de panel_analisis con la regla 'unico', un docente del
+# diplomado que solo dicta secciones compartidas quedaría sin tratamiento y, en la comparación con
+# la otra regla (13), pasaría por error al grupo de control.
+tratamiento_docente <- panel_analisis_todos |>
   dplyr::distinct(docente_id) |>
   dplyr::left_join(universo08 |>
     dplyr::select(docente_id, fecha_inicio, fecha_ultima_version,
@@ -253,6 +286,7 @@ tratamiento_docente <- panel_modelo |>
     postulo_futuro = dplyr::coalesce(postulo_futuro, FALSE),
     reingreso_posible = dplyr::coalesce(reingreso_posible, FALSE),
     rol_analitico = dplyr::case_when(
+      tiene_inicio & grepl("^fecha_version_institucion", fuente_fecha_inicio) ~ "tratado_desde_fecha_de_version",
       tiene_inicio ~ "tratado_desde_primera_postulacion",
       certificado & !tiene_inicio ~ "excluir_inicio_desconocido",
       postulo_futuro & !tiene_inicio ~ "futuro_sin_inicio",

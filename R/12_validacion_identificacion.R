@@ -3,7 +3,7 @@
 # No altera archivos 06-11. Salidas agregadas, sin identificadores personales.
 # Requiere panel_modelo y tratamiento_docente construidos por modulos 02/08.
 message('12: tendencias previas, sensibilidad cohorte 2025 y bootstrap reproducible')
-for (v in c('panel_modelo','tratamiento_docente','cfg','reporte')) {
+for (v in c('panel_analisis','tratamiento_docente','cfg','reporte')) {
   if (!exists(v, inherits=TRUE)) stop('No existe objeto requerido: ', v)
 }
 for (pkg in c('did','dplyr','tibble')) {
@@ -24,11 +24,12 @@ media12 <- function(x,w) {
   if(!any(ok)) return(NA_real_)
   sum(x[ok]*w[ok])/sum(w[ok])
 }
-base12 <- panel_modelo |>
+# Desde el 23 nov: panel_analisis (02), con reparto 1/n° de docentes por sección.
+base12 <- panel_analisis |>
   dplyr::filter(!is.na(docente_id),is.finite(n_estudiantes),n_estudiantes>0) |>
   dplyr::group_by(docente_id,anio=anio_carga) |>
-  dplyr::summarise(nota=media12(nota_media,n_estudiantes),
-                   aprobacion=media12(tasa_aprobacion,n_estudiantes),
+  dplyr::summarise(nota=media12(nota_media,n_estudiantes*peso_docente),
+                   aprobacion=media12(tasa_aprobacion,n_estudiantes*peso_docente),
                    .groups='drop') |>
   dplyr::left_join(tratamiento_docente |>
     dplyr::select(docente_id,g_anual,rol_analitico), by='docente_id') |>
@@ -65,16 +66,12 @@ estimar12 <- function(d,y,seed=seed12) {
   ntrat <- dplyr::n_distinct(d$id_did[d$g_estim>0L])
   nctrl <- dplyr::n_distinct(d$id_did[d$g_estim==0L])
   if(ntrat<2L || nctrl<2L) stop('Insuficientes tratados/controles')
-  set.seed(seed)
-  obj <- did::att_gt(yname=y,tname='anio',idname='id_did',gname='g_estim',
-    data=as.data.frame(d),panel=TRUE,allow_unbalanced_panel=TRUE,
-    control_group='notyettreated',anticipation=0,est_method='reg',
-    bstrap=TRUE,biters=iter12,clustervars='id_did',
-    alp=alpha12,cband=TRUE,print_details=FALSE)
-  simple <- tryCatch(did::aggte(obj,type='simple',na.rm=TRUE,alp=alpha12),
-                     error=function(e)e)
-  dinamico <- tryCatch(did::aggte(obj,type='dynamic',na.rm=TRUE,alp=alpha12),
-                       error=function(e)e)
+  # Semilla y opciones comunes (00_utilidades.R, 23 nov); el argumento seed se usa en la
+  # prueba de reproducibilidad.
+  cfg_s <- cfg; cfg_s$did$semilla <- seed
+  obj <- did_estimar(d, y, 'g_estim', cfg_s)
+  simple <- tryCatch(did_agregar(obj,'simple',cfg_s), error=function(e)e)
+  dinamico <- tryCatch(did_agregar(obj,'dynamic',cfg_s), error=function(e)e)
   list(obj=obj,simple=simple,dinamico=dinamico,ntrat=ntrat,nctrl=nctrl)
 }
 num12 <- function(x) {

@@ -3,7 +3,7 @@
 # Requiere: ejecucion previa de modulos 02,08,06,07,10 y dependencias did/dplyr/tibble.
 # En salidas/ SOLO se exportan tablas agregadas (sin IDs de docentes).
 message('11: reconciliacion 06/10, cohortes comunes y comparacion de modelos')
-stopifnot(exists('panel_modelo'),exists('tratamiento_docente'),exists('cfg'),exists('reporte'))
+stopifnot(exists('panel_analisis'),exists('tratamiento_docente'),exists('cfg'),exists('reporte'))
 for (paquete in c('dplyr','tibble','did')) {
   if (!requireNamespace(paquete,quietly=TRUE)) stop('Falta paquete: ',paquete)
 }
@@ -75,11 +75,12 @@ media11 <- function(x,w) {
   if(!any(ok)) return(NA_real_)
   sum(x[ok]*w[ok])/sum(w[ok])
 }
-panel11 <- panel_modelo |>
+# Desde el 23 nov: panel_analisis (02), con reparto 1/n° de docentes por sección.
+panel11 <- panel_analisis |>
   dplyr::filter(!is.na(docente_id),is.finite(n_estudiantes),n_estudiantes>0) |>
   dplyr::group_by(docente_id,anio=anio_carga) |>
-  dplyr::summarise(nota=media11(nota_media,n_estudiantes),
-                   aprobacion=media11(tasa_aprobacion,n_estudiantes),
+  dplyr::summarise(nota=media11(nota_media,n_estudiantes*peso_docente),
+                   aprobacion=media11(tasa_aprobacion,n_estudiantes*peso_docente),
                    .groups='drop') |>
   dplyr::left_join(tratamiento_docente |>
     dplyr::select(docente_id,g_anual,rol_analitico),by='docente_id') |>
@@ -119,12 +120,7 @@ for (y in c('nota','aprobacion')) {
     obj <- tryCatch({
       if(n_trat<2L || n_control<2L) stop('Soporte tratado/control insuficiente')
       # La MISMA semilla y parametros identicos en ambas ventanas.
-      set.seed(seed11)
-      did::att_gt(yname=y,tname='anio',idname='id_did',gname='g_anual',
-       data=as.data.frame(d),panel=TRUE,allow_unbalanced_panel=TRUE,
-       control_group='notyettreated',anticipation=0,est_method='reg',
-       bstrap=TRUE,biters=iter11,clustervars='id_did',
-       alp=alpha11,print_details=FALSE)
+      did_estimar(d, y, 'g_anual', cfg)
     },error=function(e)e)
     if(inherits(obj,'error')) {
       est11[[length(est11)+1L]] <- tibble::tibble(
@@ -142,7 +138,7 @@ for (y in c('nota','aprobacion')) {
         resultado=y,corte=corte,etapa='aggte',estado='SIN_ATT_POST',detalle='')
       next
     }
-    ag <- tryCatch(did::aggte(obj,type='simple',na.rm=TRUE,alp=alpha11),
+    ag <- tryCatch(did_agregar(obj,'simple',cfg),
                    error=function(e)e)
     if(inherits(ag,'error') || !is.finite(ag$overall.att) ||
        !is.finite(ag$overall.se)) {

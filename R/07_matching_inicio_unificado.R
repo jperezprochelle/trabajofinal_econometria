@@ -11,9 +11,9 @@ if (length(faltan_07)) stop("Instalar paquetes: ", paste(faltan_07,collapse=", "
 
 # ELEGIBILIDAD: nunca incluidos en cohortes observadas (g=0),
 # certificados sin inicio ya fueron excluidos del panel 06.
-# Tomamos una covariable de composición previa disponible en panel_modelo,
+# Tomamos una covariable de composición previa disponible en panel_analisis (02),
 # pero la variable de resultado final se calcula al nivel docente-año.
-pre_modalidad_07 <- panel_modelo |>
+pre_modalidad_07 <- panel_analisis |>
   dplyr::filter(!is.na(docente_id), !is.na(anio_carga)) |>
   dplyr::group_by(docente_id, anio=anio_carga) |>
   dplyr::summarise(prop_online = mean(modalidad == "O", na.rm=TRUE),
