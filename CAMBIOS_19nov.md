@@ -233,3 +233,24 @@ Este archivo no registró el trabajo del 22 de noviembre. En resumen (detalle en
 - **Resultados con la regla principal, hasta 2026 (prueba):** 40 tratados y 1.351 controles. Nota −0,10 (EE 0,078), aprobación −2,1 pp (1,6), nota relativa +0,02 (0,071), aprobación relativa −1,2 pp (1,6); ninguno distinto de cero al 7 %. Tendencias previas: no se rechaza hasta 2026 (nota p = 0,070; aprobación p = 0,26; nota relativa p = 0,11), sí hasta 2025 en nota (p = 0,055) y nota relativa (p = 0,038), y sin la cohorte 2025 en nota (p = 0,021).
 - **Hay que volver a correr `main.R`** para que todos los módulos queden con la regla principal.
 - **Corrida de la carpeta (24 nov, con la regla principal):** sin errores. Los ATT coinciden con la prueba; los errores estándar cambian levemente (otras versiones de paquetes; nota EE 0,079). Las filas `_regla_todos` reproducen exactamente la corrida anterior de la carpeta. Reconciliación del 11 y del 13 consistente.
+
+---
+
+## Módulo 15 (24 nov): réplica de la Tabla 1 de Angrist y Lavy, escala, poder y figuras
+
+- **Nuevo `R/15_replicacion_angrist_lavy.R`**, al final de `main.R`. Detalle en `README/README_MODULO_15.md`. Responde al feedback de la primera entrega (relevancia y creatividad: el método se alejaba del paper y no quedaba claro el grupo de no tratados ni el poder).
+- **Qué agrega:** (1) DE de nota y aprobación por estudiante, para expresar efectos en DE como A&L; (2) Tabla 1 de A&L con nuestro diseño: diferencia simple, DiD 2×2, regresión con resultado rezagado y matching por cuartiles, cohortes 2023–2025 apiladas, pre = g−1 y post = g+1 (y g+2); (3) EE y efecto mínimo detectable con controles amplios vs. solo postulantes; (4) verificación de cambios en la carga asignada tras el inicio; (5) 2WFE frente a Callaway-Sant'Anna; (6) figuras F1–F4 en `salidas/figuras/`.
+- **Qué se decidió no hacer (y por qué):** Sun-Abraham (redundante con Callaway-Sant'Anna, ambos robustos a efectos heterogéneos); descomposición de Goodman-Bacon (exige panel balanceado); wild cluster bootstrap e inferencia por aleatorización (con 40 tratados, el bootstrap multiplicador agrupado por docente de `did` es adecuado); heterogeneidad por rendimiento previo (con 40 tratados, cada mitad tendría ~20 y un EMD mayor que cualquier efecto plausible).
+- **Verificado (prueba en una copia):** `main.R` completo sin errores.
+- **Resultados de la prueba (usar la corrida de la carpeta):**
+  - DE de la nota por estudiante: 1,37 (por docente-año: 0,76). El ATT de −0,10 equivale a −0,075 DE; el IC del 93 % descarta efectos de 0,25 DE como los de A&L.
+  - Réplica A&L, h = 1 (22 tratados, 990 controles): tratados con nota previa más baja (−0,14); diferencia simple −0,05; DiD +0,09; rezago +0,05; matching por cuartiles +0,09. Ninguno distinto de cero. Mismo patrón que A&L (DiD por sobre la regresión con rezago, consistente con un pre transitoriamente bajo), pero en magnitud de 0,04–0,07 DE.
+  - Poder: EMD en nota de 0,21 (0,15 DE) con controles amplios; 0,72 (0,52 DE) con solo postulantes.
+  - Asignación: tras el inicio, los tratados tienen 12 pp menos de estudiantes de programas trimestrales (significativo al 7 %). Como esos programas ponen notas más altas, la nota bruta puede caer por composición: refuerza usar la nota relativa.
+  - 2WFE da +0,06 en nota y Callaway-Sant'Anna −0,10. No se debe a comparaciones con ya tratados (los controles son casi todos nunca iniciados): 2WFE usa todo el período previo como base y Callaway-Sant'Anna el año g−1; con tendencias previas, eso cambia el resultado.
+
+## 25 nov: módulo 16
+- `R/16_complementos_informe.R` (agregado al final de `main.R`): emparejamiento por cohorte apilado (16_matching_apilado.csv), muestra del 2WFE (16_twfe_muestra.csv) y nota media por régimen (16_nota_por_regimen.csv). Probado con los objetos reales de 01 a 06: reproduce exactamente las estimaciones por cohorte del 07 y el 2WFE del 15.
+- 25 nov (tarde): el 16 agrega la figura F1_trayectorias_agrupadas (tratados de todas las cohortes frente a nunca iniciados en los mismos años calendario, por años desde el inicio, solo años con 5 o más tratados) y 16_trayectorias_agrupadas.csv. Reemplaza a la F1 por cohorte del 15 en el informe.
+- 25 nov (noche): figuras F2 a F4 con coma decimal y "Emparejamiento por cuartiles" en F3 (código en el 15). paquete_replicacion.zip actualizado con los módulos 01 a 16, datos simulados, README y sin nombres del personal; main.R corre completo sobre los datos simulados.
+- 25 nov (noche, 2): el 16 agrega (e) 2WFE con distintos años base (16_twfe_periodo_base.csv) y estudio de eventos 2WFE (16_twfe_eventos.csv), y (f) descriptivos en g-1 de tratados, nunca iniciados y docentes que inician después (16_descriptivos_pre.csv). F2 con nota primero y aprobación en pp. Paquete de replicación actualizado y probado.
